@@ -26494,9 +26494,15 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
+	var _constants = __webpack_require__(295);
+
 	var _Square = __webpack_require__(292);
 
 	var _Square2 = _interopRequireDefault(_Square);
+
+	var _Piece = __webpack_require__(294);
+
+	var _Piece2 = _interopRequireDefault(_Piece);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -26529,12 +26535,22 @@
 	    value: function _renderSquares() {
 	      var squares = [];
 
-	      for (var x = 1; x < 9; x++) {
-	        for (var y = 1; y < 9; y++) {
-	          var color = (x + y) % 2 ? 'black' : 'white';
+	      for (var i = 0; i < 64; i++) {
+	        var x = i % 8 + 1;
+	        var y = Math.floor(i / 8) + 1;
+	        var color = (x + y) % 2 ? 'black' : 'white';
+	        var piece = void 0;
 
-	          squares.push(_react2.default.createElement(_Square2.default, { color: color, key: x + '-' + y }));
+	        if (_constants.START_POSITIONS[i]) {
+	          var p = _constants.START_POSITIONS[i];
+	          piece = _react2.default.createElement(_Piece2.default, { type: p.type, color: p.color });
 	        }
+
+	        squares.push(_react2.default.createElement(
+	          _Square2.default,
+	          { color: color, key: i },
+	          piece
+	        ));
 	      }
 
 	      return squares;
@@ -26566,6 +26582,8 @@
 
 	var _classnames2 = _interopRequireDefault(_classnames);
 
+	var _constants = __webpack_require__(295);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -26586,7 +26604,11 @@
 	  _createClass(Square, [{
 	    key: 'render',
 	    value: function render() {
-	      return _react2.default.createElement('div', { className: (0, _classnames2.default)('square', this.props.color) });
+	      return _react2.default.createElement(
+	        'div',
+	        { className: (0, _classnames2.default)('square', this.props.color) },
+	        this.props.children
+	      );
 	    }
 	  }]);
 
@@ -26594,6 +26616,11 @@
 	}(_react.Component);
 
 	exports.default = Square;
+
+
+	Square.propTypes = {
+	  color: _react.PropTypes.oneOf(_constants.COLORS).isRequired
+	};
 
 /***/ },
 /* 293 */
@@ -26648,6 +26675,117 @@
 		}
 	}());
 
+
+/***/ },
+/* 294 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _classnames = __webpack_require__(293);
+
+	var _classnames2 = _interopRequireDefault(_classnames);
+
+	var _constants = __webpack_require__(295);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var Piece = function (_Component) {
+	  _inherits(Piece, _Component);
+
+	  function Piece() {
+	    _classCallCheck(this, Piece);
+
+	    return _possibleConstructorReturn(this, Object.getPrototypeOf(Piece).apply(this, arguments));
+	  }
+
+	  _createClass(Piece, [{
+	    key: 'render',
+	    value: function render() {
+	      var piece = this.props.color + '-' + this.props.type;
+
+	      return _react2.default.createElement(
+	        'div',
+	        { className: (0, _classnames2.default)('piece', piece) },
+	        _react2.default.createElement('img', { src: '/images/' + this.props.color + '_' + this.props.type + '.png' })
+	      );
+	    }
+	  }]);
+
+	  return Piece;
+	}(_react.Component);
+
+	exports.default = Piece;
+
+
+	Piece.propTypes = {
+	  type: _react.PropTypes.oneOf(_constants.PIECES).isRequired,
+	  color: _react.PropTypes.oneOf(_constants.COLORS).isRequired
+	};
+
+/***/ },
+/* 295 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var COLORS = exports.COLORS = ['white', 'black'];
+
+	var PIECES = exports.PIECES = ['king', 'queen', 'bishop', 'knight', 'rook', 'pawn'];
+
+	var START_POSITIONS = exports.START_POSITIONS = {
+	  '0': { color: 'black', type: 'rook' },
+	  '1': { color: 'black', type: 'knight' },
+	  '2': { color: 'black', type: 'bishop' },
+	  '3': { color: 'black', type: 'queen' },
+	  '4': { color: 'black', type: 'king' },
+	  '5': { color: 'black', type: 'bishop' },
+	  '6': { color: 'black', type: 'knight' },
+	  '7': { color: 'black', type: 'rook' },
+	  '8': { color: 'black', type: 'pawn' },
+	  '9': { color: 'black', type: 'pawn' },
+	  '10': { color: 'black', type: 'pawn' },
+	  '11': { color: 'black', type: 'pawn' },
+	  '12': { color: 'black', type: 'pawn' },
+	  '13': { color: 'black', type: 'pawn' },
+	  '14': { color: 'black', type: 'pawn' },
+	  '15': { color: 'black', type: 'pawn' },
+	  '48': { color: 'white', type: 'pawn' },
+	  '49': { color: 'white', type: 'pawn' },
+	  '50': { color: 'white', type: 'pawn' },
+	  '51': { color: 'white', type: 'pawn' },
+	  '52': { color: 'white', type: 'pawn' },
+	  '53': { color: 'white', type: 'pawn' },
+	  '54': { color: 'white', type: 'pawn' },
+	  '55': { color: 'white', type: 'pawn' },
+	  '56': { color: 'white', type: 'rook' },
+	  '57': { color: 'white', type: 'knight' },
+	  '58': { color: 'white', type: 'bishop' },
+	  '59': { color: 'white', type: 'queen' },
+	  '60': { color: 'white', type: 'king' },
+	  '61': { color: 'white', type: 'bishop' },
+	  '62': { color: 'white', type: 'knight' },
+	  '63': { color: 'white', type: 'rook' }
+	};
 
 /***/ }
 /******/ ]);

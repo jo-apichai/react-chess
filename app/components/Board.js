@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 
+import { START_POSITIONS } from '../configs/constants';
 import Square from './Square';
+import Piece from './Piece';
 
 export default class Board extends Component {
   render() {
@@ -14,14 +16,22 @@ export default class Board extends Component {
   _renderSquares() {
     let squares = [];
 
-    for(let x = 1; x < 9; x++) {
-      for(let y = 1; y < 9; y++) {
-        let color = ((x + y) % 2) ? 'black' : 'white';
+    for(let i = 0; i < 64; i++) {
+      let x = (i % 8) + 1;
+      let y = Math.floor(i / 8) + 1;
+      let color = ((x + y) % 2) ? 'black' : 'white';
+      let piece;
 
-        squares.push(
-          <Square color={color} key={`${x}-${y}`} />
-        );
+      if(START_POSITIONS[i]) {
+        let p = START_POSITIONS[i];
+        piece = <Piece type={p.type} color={p.color} />
       }
+
+      squares.push(
+        <Square color={color} key={i}>
+          {piece}
+        </Square>
+      );
     }
 
     return squares;

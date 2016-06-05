@@ -15,5 +15,17 @@
 }
 
 .black {
-  background-color: #000;
+  background-color: #888;
+}
+
+.piece {
+  width: 60px;
+  height: 60px;
+  padding: 10px;
+  text-align: center;
+}
+
+.piece img {
+  width: 60px;
+  height: 60px;
 }
