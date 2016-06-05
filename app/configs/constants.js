@@ -1,10 +1,8 @@
 export const COLORS = ['white', 'black'];
 
-export const PIECES = [
-  'king', 'queen', 'bishop', 'knight', 'rook', 'pawn'
-];
+export const PIECES = ['king', 'queen', 'bishop', 'knight', 'rook', 'pawn'];
 
-export const START_POSITIONS = {
+export const STARTING_POSITIONS = {
   '0': { color: 'black', type: 'rook' },
   '1': { color: 'black', type: 'knight' },
   '2': { color: 'black', type: 'bishop' },

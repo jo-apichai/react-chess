@@ -5,17 +5,17 @@ import { COLORS, PIECES } from '../configs/constants';
 
 export default class Piece extends Component {
   render() {
-    let piece = `${this.props.color}-${this.props.type}`;
+    let pieceClass = `${this.props.color}-${this.props.type}`;
 
     return(
-      <div className={ClassNames('piece', piece)}>
-        <img src={`/images/${this.props.color}_${this.props.type}.png`} />
+      <div className={ClassNames('piece', pieceClass)}>
+        <img src={`/images/${pieceClass}.png`} />
       </div>
     );
   }
 }
 
 Piece.propTypes = {
-  type: PropTypes.oneOf(PIECES).isRequired,
-  color: PropTypes.oneOf(COLORS).isRequired
+  color: PropTypes.oneOf(COLORS).isRequired,
+  type: PropTypes.oneOf(PIECES).isRequired
 }

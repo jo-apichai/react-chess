@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 
-import { START_POSITIONS } from '../configs/constants';
 import Square from './Square';
 import Piece from './Piece';
 
@@ -20,20 +19,24 @@ export default class Board extends Component {
       let x = (i % 8) + 1;
       let y = Math.floor(i / 8) + 1;
       let color = ((x + y) % 2) ? 'black' : 'white';
-      let piece;
-
-      if(START_POSITIONS[i]) {
-        let p = START_POSITIONS[i];
-        piece = <Piece type={p.type} color={p.color} />
-      }
 
       squares.push(
         <Square color={color} key={i}>
-          {piece}
+          {this._getPieceAtSquare(x, y)}
         </Square>
       );
     }
 
     return squares;
+  }
+
+  _getPieceAtSquare(x, y) {
+    let piece = this.props.positions[`${x}-${y}`];
+
+    if(piece) {
+      return <Piece color={piece.color} type={piece.type} />;
+    }
+
+    return null;
   }
 }

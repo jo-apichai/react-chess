@@ -1,10 +1,15 @@
-// npm modules
-import React, { PropTypes } from "react";
-import ReactDOM from "react-dom";
-import { DragSource } from "react-dnd";
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { createStore } from 'redux';
+import { Provider } from 'react-redux'
 
-import Board from "./Board";
+import game from '../reducers/game';
+import ChessBoard from '../containers/ChessBoard';
+
+let store = createStore(game);
 
 ReactDOM.render((
-  <Board />
+  <Provider store={store}>
+    <ChessBoard />
+  </Provider>
 ), document.getElementById("container"));

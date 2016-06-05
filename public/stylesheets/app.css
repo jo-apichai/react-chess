@@ -23,6 +23,7 @@
   height: 60px;
   padding: 10px;
   text-align: center;
+  cursor: pointer;
 }
 
 .piece img {
