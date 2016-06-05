@@ -1,0 +1,19 @@
+#board {
+  width: 640px;
+  height: 640px;
+  border: 1px solid #CCC;
+}
+
+.square {
+  width: 80px;
+  height: 80px;
+  float: left;
+}
+
+.white {
+  background-color: #FFF;
+}
+
+.black {
+  background-color: #000;
+}
