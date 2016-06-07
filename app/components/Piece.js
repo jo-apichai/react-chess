@@ -1,13 +1,16 @@
 import React, { Component, PropTypes } from 'react';
+import { DragSource } from 'react-dnd';
 import ClassNames from 'classnames';
 
-import { COLORS, PIECES } from '../configs/constants';
+import { COLORS, PIECES, DND_PIECE } from '../configs/constants';
 
-export default class Piece extends Component {
+class Piece extends Component {
   render() {
+    const { connectDragSource } = this.props;
+
     let pieceClass = `${this.props.color}-${this.props.type}`;
 
-    return(
+    return connectDragSource(
       <div className={ClassNames('piece', pieceClass)}>
         <img src={`/images/${pieceClass}.png`} />
       </div>
@@ -16,6 +19,25 @@ export default class Piece extends Component {
 }
 
 Piece.propTypes = {
+  x: PropTypes.number.isRequired,
+  y: PropTypes.number.isRequired,
   color: PropTypes.oneOf(COLORS).isRequired,
-  type: PropTypes.oneOf(PIECES).isRequired
+  type: PropTypes.oneOf(PIECES).isRequired,
+  connectDragSource: PropTypes.func.isRequired,
+  isDragging: PropTypes.bool.isRequired
 }
+
+const pieceSource = {
+  beginDrag(props) {
+    return { x: props.x, y: props.y };
+  }
+};
+
+function collect(connect, monitor) {
+  return {
+    connectDragSource: connect.dragSource(),
+    isDragging: monitor.isDragging()
+  };
+}
+
+export default DragSource(DND_PIECE, pieceSource, collect)(Piece);

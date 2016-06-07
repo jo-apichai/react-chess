@@ -1,9 +1,11 @@
-import React, { Component } from 'react';
+import React, { Component, PropTypes } from 'react';
+import { DragDropContext } from 'react-dnd';
+import HTML5Backend from 'react-dnd-html5-backend';
 
 import Square from './Square';
 import Piece from './Piece';
 
-export default class Board extends Component {
+class Board extends Component {
   render() {
     return (
       <div id="board">
@@ -14,6 +16,7 @@ export default class Board extends Component {
 
   _renderSquares() {
     let squares = [];
+    let { movePiece } = this.props;
 
     for(let i = 0; i < 64; i++) {
       let x = (i % 8) + 1;
@@ -21,7 +24,7 @@ export default class Board extends Component {
       let color = ((x + y) % 2) ? 'black' : 'white';
 
       squares.push(
-        <Square color={color} key={i}>
+        <Square x={x} y={y} color={color} key={i} movePiece={movePiece}>
           {this._getPieceAtSquare(x, y)}
         </Square>
       );
@@ -34,9 +37,16 @@ export default class Board extends Component {
     let piece = this.props.positions[`${x}-${y}`];
 
     if(piece) {
-      return <Piece color={piece.color} type={piece.type} />;
+      return <Piece color={piece.color} type={piece.type} x={x} y={y} />;
     }
 
     return null;
   }
 }
+
+Board.propTypes = {
+  positions: PropTypes.object.isRequired,
+  movePiece: PropTypes.func.isRequired
+}
+
+export default DragDropContext(HTML5Backend)(Board);

@@ -4,7 +4,16 @@ import { MOVE_PIECE } from '../actions/game';
 const positions = function(state, action) {
   switch(action.type) {
     case MOVE_PIECE:
-      return state;
+      let { from, to } = action;
+
+      let newState = {};
+      let fromXY = `${from.x}-${from.y}`;
+      let toXY = `${to.x}-${to.y}`;
+
+      newState[fromXY] = null;
+      newState[toXY] = state[fromXY];
+
+      return Object.assign({}, state, newState);
     default:
       return getStartingPositions();
   }
