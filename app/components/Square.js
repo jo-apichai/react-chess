@@ -20,6 +20,7 @@ Square.propTypes = {
   x: PropTypes.number.isRequired,
   y: PropTypes.number.isRequired,
   color: PropTypes.oneOf(COLORS).isRequired,
+  turn: PropTypes.string.isRequired,
   movePiece: PropTypes.func.isRequired,
   connectDropTarget: PropTypes.func.isRequired,
   isOver: PropTypes.bool.isRequired
@@ -31,6 +32,21 @@ const squareTarget = {
       monitor.getItem(),
       { x: props.x, y: props.y }
     );
+  },
+
+  canDrop(props, monitor) {
+    let piece = monitor.getItem();
+
+    switch(true) {
+      case (piece.color !== props.turn):
+        return false;
+        break;
+      case (piece.x === props.x && piece.y === props.y):
+        return false;
+        break;
+      default:
+        return true;
+    }
   }
 };
 

@@ -24,7 +24,8 @@ class Board extends Component {
       let color = ((x + y) % 2) ? 'black' : 'white';
 
       squares.push(
-        <Square x={x} y={y} color={color} key={i} movePiece={movePiece}>
+        <Square x={x} y={y} color={color} key={i}
+          turn={this.props.turn} movePiece={movePiece}>
           {this._getPieceAtSquare(x, y)}
         </Square>
       );
@@ -45,6 +46,7 @@ class Board extends Component {
 }
 
 Board.propTypes = {
+  turn: PropTypes.string.isRequired,
   positions: PropTypes.object.isRequired,
   movePiece: PropTypes.func.isRequired
 }

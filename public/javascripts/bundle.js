@@ -22077,6 +22077,7 @@
 
 	var mapStateToProps = function mapStateToProps(state) {
 	  return {
+	    turn: state.turn,
 	    positions: state.positions
 	  };
 	};
@@ -22163,7 +22164,8 @@
 
 	        squares.push(_react2.default.createElement(
 	          _Square2.default,
-	          { x: x, y: y, color: color, key: i, movePiece: movePiece },
+	          { x: x, y: y, color: color, key: i,
+	            turn: this.props.turn, movePiece: movePiece },
 	          this._getPieceAtSquare(x, y)
 	        ));
 	      }
@@ -22187,6 +22189,7 @@
 	}(_react.Component);
 
 	Board.propTypes = {
+	  turn: _react.PropTypes.string.isRequired,
 	  positions: _react.PropTypes.object.isRequired,
 	  movePiece: _react.PropTypes.func.isRequired
 	};
@@ -29760,6 +29763,7 @@
 	  x: _react.PropTypes.number.isRequired,
 	  y: _react.PropTypes.number.isRequired,
 	  color: _react.PropTypes.oneOf(_constants.COLORS).isRequired,
+	  turn: _react.PropTypes.string.isRequired,
 	  movePiece: _react.PropTypes.func.isRequired,
 	  connectDropTarget: _react.PropTypes.func.isRequired,
 	  isOver: _react.PropTypes.bool.isRequired
@@ -29768,6 +29772,20 @@
 	var squareTarget = {
 	  drop: function drop(props, monitor) {
 	    props.movePiece(monitor.getItem(), { x: props.x, y: props.y });
+	  },
+	  canDrop: function canDrop(props, monitor) {
+	    var piece = monitor.getItem();
+
+	    switch (true) {
+	      case piece.color !== props.turn:
+	        return false;
+	        break;
+	      case piece.x === props.x && piece.y === props.y:
+	        return false;
+	        break;
+	      default:
+	        return true;
+	    }
 	  }
 	};
 
@@ -29923,7 +29941,11 @@
 
 	var pieceSource = {
 	  beginDrag: function beginDrag(props) {
-	    return { x: props.x, y: props.y };
+	    return {
+	      x: props.x,
+	      y: props.y,
+	      color: props.color
+	    };
 	  }
 	};
 

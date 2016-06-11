@@ -4,6 +4,7 @@ import Board from '../components/Board';
 
 const mapStateToProps = function(state) {
   return {
+    turn: state.turn,
     positions: state.positions
   };
 }

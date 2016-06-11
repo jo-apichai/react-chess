@@ -43,7 +43,11 @@ Piece.propTypes = {
 
 const pieceSource = {
   beginDrag(props) {
-    return { x: props.x, y: props.y };
+    return {
+      x: props.x,
+      y: props.y,
+      color: props.color
+    };
   }
 };
 
