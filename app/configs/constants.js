@@ -35,6 +35,6 @@ export const STARTING_POSITIONS = {
   '61': { color: 'white', type: 'bishop' },
   '62': { color: 'white', type: 'knight' },
   '63': { color: 'white', type: 'rook' }
-}
+};
 
 export const DND_PIECE = 'piece';

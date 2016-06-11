@@ -4,6 +4,7 @@ import HTML5Backend from 'react-dnd-html5-backend';
 
 import Square from './Square';
 import Piece from './Piece';
+import Engine from '../utils/Engine';
 
 class Board extends Component {
   render() {
@@ -12,6 +13,14 @@ class Board extends Component {
         { this._renderSquares() }
       </div>
     );
+  }
+
+  componentWillMount() {
+    this.engine = new Engine();
+  }
+
+  isMoveValid(piece, target) {
+    return this.engine.isMoveValid(this.props.positions, piece, target);
   }
 
   _renderSquares() {
@@ -25,7 +34,8 @@ class Board extends Component {
 
       squares.push(
         <Square x={x} y={y} color={color} key={i}
-          turn={this.props.turn} movePiece={movePiece}>
+          turn={this.props.turn} movePiece={movePiece}
+          isMoveValid={this.isMoveValid.bind(this)}>
           {this._getPieceAtSquare(x, y)}
         </Square>
       );

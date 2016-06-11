@@ -5,16 +5,11 @@ import ClassNames from 'classnames';
 import { COLORS, PIECES, DND_PIECE } from '../configs/constants';
 
 class Piece extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { pieceName: `${this.props.color}-${this.props.type}` };
-  }
-
   render() {
     const { connectDragSource } = this.props;
 
     return connectDragSource(
-      <div className={ClassNames('piece', this.state.pieceName)}>
+      <div className={ClassNames('piece', this._getPieceName())}>
         <img src={this._getPieceImage()} />
       </div>
     );
@@ -26,8 +21,18 @@ class Piece extends Component {
     img.onload = () => this.props.connectDragPreview(img);
   }
 
+  componentWillReceiveProps(nextProps) {
+    let img = new Image();
+    img.src = `/images/${nextProps.color}-${nextProps.type}.png`;
+    img.onload = () => this.props.connectDragPreview(img);
+  }
+
+  _getPieceName() {
+    return `${this.props.color}-${this.props.type}`;
+  }
+
   _getPieceImage() {
-    return `/images/${this.state.pieceName}.png`;
+    return `/images/${this._getPieceName()}.png`;
   }
 }
 
@@ -46,7 +51,8 @@ const pieceSource = {
     return {
       x: props.x,
       y: props.y,
-      color: props.color
+      color: props.color,
+      type: props.type
     };
   }
 };

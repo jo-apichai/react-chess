@@ -22124,6 +22124,10 @@
 
 	var _Piece2 = _interopRequireDefault(_Piece);
 
+	var _Engine = __webpack_require__(346);
+
+	var _Engine2 = _interopRequireDefault(_Engine);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -22151,6 +22155,16 @@
 	      );
 	    }
 	  }, {
+	    key: 'componentWillMount',
+	    value: function componentWillMount() {
+	      this.engine = new _Engine2.default();
+	    }
+	  }, {
+	    key: 'isMoveValid',
+	    value: function isMoveValid(piece, target) {
+	      return this.engine.isMoveValid(this.props.positions, piece, target);
+	    }
+	  }, {
 	    key: '_renderSquares',
 	    value: function _renderSquares() {
 	      var squares = [];
@@ -22165,7 +22179,8 @@
 	        squares.push(_react2.default.createElement(
 	          _Square2.default,
 	          { x: x, y: y, color: color, key: i,
-	            turn: this.props.turn, movePiece: movePiece },
+	            turn: this.props.turn, movePiece: movePiece,
+	            isMoveValid: this.isMoveValid.bind(this) },
 	          this._getPieceAtSquare(x, y)
 	        ));
 	      }
@@ -29745,14 +29760,36 @@
 	  _createClass(Square, [{
 	    key: 'render',
 	    value: function render() {
-	      var connectDropTarget = this.props.connectDropTarget;
+	      var _props = this.props;
+	      var connectDropTarget = _props.connectDropTarget;
+	      var isOver = _props.isOver;
+	      var canDrop = _props.canDrop;
 
+
+	      var overlay = void 0;
+	      switch (true) {
+	        case isOver && canDrop:
+	          overlay = this._renderOverlay('green');
+	          break;
+	        case isOver && !canDrop:
+	          overlay = this._renderOverlay('red');
+	          break;
+	        case !isOver && canDrop:
+	          overlay = this._renderOverlay('yellow');
+	          break;
+	      }
 
 	      return connectDropTarget(_react2.default.createElement(
 	        'div',
 	        { className: (0, _classnames2.default)('square', this.props.color) },
-	        this.props.children
+	        this.props.children,
+	        overlay
 	      ));
+	    }
+	  }, {
+	    key: '_renderOverlay',
+	    value: function _renderOverlay(color) {
+	      return _react2.default.createElement('div', { className: (0, _classnames2.default)('overlay', color) });
 	    }
 	  }]);
 
@@ -29765,8 +29802,10 @@
 	  color: _react.PropTypes.oneOf(_constants.COLORS).isRequired,
 	  turn: _react.PropTypes.string.isRequired,
 	  movePiece: _react.PropTypes.func.isRequired,
+	  isMoveValid: _react.PropTypes.func.isRequired,
 	  connectDropTarget: _react.PropTypes.func.isRequired,
-	  isOver: _react.PropTypes.bool.isRequired
+	  isOver: _react.PropTypes.bool.isRequired,
+	  canDrop: _react.PropTypes.bool.isRequired
 	};
 
 	var squareTarget = {
@@ -29775,16 +29814,17 @@
 	  },
 	  canDrop: function canDrop(props, monitor) {
 	    var piece = monitor.getItem();
+	    var target = { x: props.x, y: props.y };
 
 	    switch (true) {
 	      case piece.color !== props.turn:
 	        return false;
 	        break;
-	      case piece.x === props.x && piece.y === props.y:
+	      case piece.x === target.x && piece.y === target.y:
 	        return false;
 	        break;
 	      default:
-	        return true;
+	        return props.isMoveValid(piece, target);
 	    }
 	  }
 	};
@@ -29792,7 +29832,8 @@
 	function collect(connect, monitor) {
 	  return {
 	    connectDropTarget: connect.dropTarget(),
-	    isOver: monitor.isOver()
+	    isOver: monitor.isOver(),
+	    canDrop: monitor.canDrop()
 	  };
 	}
 
@@ -29887,13 +29928,10 @@
 	var Piece = function (_Component) {
 	  _inherits(Piece, _Component);
 
-	  function Piece(props) {
+	  function Piece() {
 	    _classCallCheck(this, Piece);
 
-	    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Piece).call(this, props));
-
-	    _this.state = { pieceName: _this.props.color + '-' + _this.props.type };
-	    return _this;
+	    return _possibleConstructorReturn(this, Object.getPrototypeOf(Piece).apply(this, arguments));
 	  }
 
 	  _createClass(Piece, [{
@@ -29904,7 +29942,7 @@
 
 	      return connectDragSource(_react2.default.createElement(
 	        'div',
-	        { className: (0, _classnames2.default)('piece', this.state.pieceName) },
+	        { className: (0, _classnames2.default)('piece', this._getPieceName()) },
 	        _react2.default.createElement('img', { src: this._getPieceImage() })
 	      ));
 	    }
@@ -29920,9 +29958,25 @@
 	      };
 	    }
 	  }, {
+	    key: 'componentWillReceiveProps',
+	    value: function componentWillReceiveProps(nextProps) {
+	      var _this3 = this;
+
+	      var img = new Image();
+	      img.src = '/images/' + nextProps.color + '-' + nextProps.type + '.png';
+	      img.onload = function () {
+	        return _this3.props.connectDragPreview(img);
+	      };
+	    }
+	  }, {
+	    key: '_getPieceName',
+	    value: function _getPieceName() {
+	      return this.props.color + '-' + this.props.type;
+	    }
+	  }, {
 	    key: '_getPieceImage',
 	    value: function _getPieceImage() {
-	      return '/images/' + this.state.pieceName + '.png';
+	      return '/images/' + this._getPieceName() + '.png';
 	    }
 	  }]);
 
@@ -29944,7 +29998,8 @@
 	    return {
 	      x: props.x,
 	      y: props.y,
-	      color: props.color
+	      color: props.color,
+	      type: props.type
 	    };
 	  }
 	};
@@ -29958,6 +30013,102 @@
 	}
 
 	exports.default = (0, _reactDnd.DragSource)(_constants.DND_PIECE, pieceSource, collect)(Piece);
+
+/***/ },
+/* 346 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var Engine = function () {
+	  function Engine() {
+	    _classCallCheck(this, Engine);
+	  }
+
+	  _createClass(Engine, [{
+	    key: 'isMoveValid',
+	    value: function isMoveValid(positions, piece, target) {
+	      this.positions = positions;
+	      this.piece = piece;
+	      this.target = target;
+
+	      var pieceAtTarget = this.positions[this.target.x + '-' + this.target.y];
+
+	      if (pieceAtTarget && pieceAtTarget.color === this.piece.color) {
+	        return false;
+	      }
+
+	      switch (piece.type) {
+	        case 'rook':
+	          return this.canMoveRook();
+	        case 'knight':
+	          return this.canMoveKnight();
+	        default:
+	          return true;
+	      }
+	    }
+	  }, {
+	    key: 'canMoveRook',
+	    value: function canMoveRook() {
+	      if (this.piece.x !== this.target.x && this.piece.y !== this.target.y) {
+	        return false;
+	      }
+
+	      var startPos = void 0,
+	          endPos = void 0,
+	          movePattern = void 0;
+	      if (this.piece.x === this.target.x) {
+	        movePattern = this.piece.x + '-#';
+
+	        var _sort = [this.piece.y, this.target.y].sort();
+
+	        var _sort2 = _slicedToArray(_sort, 2);
+
+	        startPos = _sort2[0];
+	        endPos = _sort2[1];
+	      } else {
+	        movePattern = '#-' + this.piece.y;
+
+	        var _sort3 = [this.piece.x, this.target.x].sort();
+
+	        var _sort4 = _slicedToArray(_sort3, 2);
+
+	        startPos = _sort4[0];
+	        endPos = _sort4[1];
+	      }
+
+	      for (var i = startPos + 1; i < endPos; i++) {
+	        if (this.positions[movePattern.replace('#', i)] !== null) {
+	          return false;
+	        }
+	      }
+
+	      return true;
+	    }
+	  }, {
+	    key: 'canMoveKnight',
+	    value: function canMoveKnight() {
+	      var dx = this.target.x - this.piece.x;
+	      var dy = this.target.y - this.piece.y;
+
+	      return Math.abs(dx) === 2 && Math.abs(dy) === 1 || Math.abs(dx) === 1 && Math.abs(dy) === 2;
+	    }
+	  }]);
+
+	  return Engine;
+	}();
+
+	exports.default = Engine;
 
 /***/ }
 /******/ ]);
