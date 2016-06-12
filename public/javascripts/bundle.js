@@ -30053,6 +30053,10 @@
 	          return this.canMoveRook();
 	        case 'knight':
 	          return this.canMoveKnight();
+	        case 'bishop':
+	          return this.canMoveBishop();
+	        case 'queen':
+	          return this.canMoveQueen();
 	        default:
 	          return true;
 	      }
@@ -30102,6 +30106,35 @@
 	      var dy = this.target.y - this.piece.y;
 
 	      return Math.abs(dx) === 2 && Math.abs(dy) === 1 || Math.abs(dx) === 1 && Math.abs(dy) === 2;
+	    }
+	  }, {
+	    key: 'canMoveBishop',
+	    value: function canMoveBishop() {
+	      var dx = this.target.x - this.piece.x;
+	      var dy = this.target.y - this.piece.y;
+
+	      if (Math.abs(dx) !== Math.abs(dy)) {
+	        return false;
+	      }
+
+	      var xMod = this.piece.x < this.target.x ? 1 : -1;
+	      var yMod = this.piece.y < this.target.y ? 1 : -1;
+
+	      for (var i = 1; i < Math.abs(dx); i++) {
+	        var x = this.piece.x + i * xMod;
+	        var y = this.piece.y + i * yMod;
+
+	        if (this.positions[x + '-' + y] !== null) {
+	          return false;
+	        }
+	      }
+
+	      return true;
+	    }
+	  }, {
+	    key: 'canMoveQueen',
+	    value: function canMoveQueen() {
+	      return this.canMoveRook() || this.canMoveBishop();
 	    }
 	  }]);
 

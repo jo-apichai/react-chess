@@ -15,6 +15,10 @@ export default class Engine {
         return this.canMoveRook();
       case 'knight':
         return this.canMoveKnight();
+      case 'bishop':
+        return this.canMoveBishop();
+      case 'queen':
+        return this.canMoveQueen();
       default:
         return true;
     }
@@ -49,5 +53,32 @@ export default class Engine {
 
     return (Math.abs(dx) === 2 && Math.abs(dy) === 1) ||
            (Math.abs(dx) === 1 && Math.abs(dy) === 2);
+  }
+
+  canMoveBishop() {
+    const dx = this.target.x - this.piece.x;
+    const dy = this.target.y - this.piece.y;
+
+    if(Math.abs(dx) !== Math.abs(dy)) {
+      return false;
+    }
+
+    let xMod = (this.piece.x < this.target.x) ? 1 : -1;
+    let yMod = (this.piece.y < this.target.y) ? 1 : -1;
+
+    for(let i = 1; i < Math.abs(dx); i++) {
+      let x = this.piece.x + (i * xMod);
+      let y = this.piece.y + (i * yMod);
+
+      if(this.positions[`${x}-${y}`] !== null) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  canMoveQueen() {
+    return this.canMoveRook() || this.canMoveBishop();
   }
 }
