@@ -11,6 +11,9 @@ export default class Engine {
     }
 
     switch(piece.type) {
+      case 'pawn':
+        this.pieceAtTarget = pieceAtTarget;
+        return this.canMovePawn();
       case 'rook':
         return this.canMoveRook();
       case 'knight':
@@ -19,8 +22,33 @@ export default class Engine {
         return this.canMoveBishop();
       case 'queen':
         return this.canMoveQueen();
+      case 'king':
+        return this.canMoveKing();
+    }
+  }
+
+  canMovePawn(pieceAtTarget) {
+    const dx = this.target.x - this.piece.x;
+    const dy = this.target.y - this.piece.y;
+    const moveDirection = this.getMoveDirection(this.piece.color);
+
+    switch(true) {
+      case (dx === 0 && !this.pieceAtTarget):
+        if(dy === (moveDirection * 2) && !this.piece.moved) {
+          let x = this.piece.x;
+          let y = this.piece.y + moveDirection;
+          return !this.positions[`${x}-${y}`];
+        } else {
+          return (dy === moveDirection);
+        }
+      case (Math.abs(dx) === 1 && dy === moveDirection):
+        if(!this.pieceAtTarget) {
+          return false;
+        } else {
+          return this.pieceAtTarget.color !== this.piece.color;
+        }
       default:
-        return true;
+        return false;
     }
   }
 
@@ -80,5 +108,20 @@ export default class Engine {
 
   canMoveQueen() {
     return this.canMoveRook() || this.canMoveBishop();
+  }
+
+  canMoveKing() {
+    const dx = this.target.x - this.piece.x;
+    const dy = this.target.y - this.piece.y;
+
+    if(Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+      return false;
+    }
+
+    return true;
+  }
+
+  getMoveDirection(color) {
+    return (color === 'white') ? -1 : 1;
   }
 }

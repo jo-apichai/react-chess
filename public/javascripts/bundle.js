@@ -21941,6 +21941,7 @@
 
 	      newState[fromXY] = null;
 	      newState[toXY] = state[fromXY];
+	      newState[toXY].moved = true;
 
 	      return Object.assign({}, state, newState);
 	    default:
@@ -21955,6 +21956,10 @@
 	    var x = i % 8 + 1;
 	    var y = Math.floor(i / 8) + 1;
 	    var piece = _constants.STARTING_POSITIONS[i] || null;
+
+	    if (piece) {
+	      piece.moved = false;
+	    }
 
 	    pos[x + '-' + y] = piece;
 	  }
@@ -22193,7 +22198,8 @@
 	      var piece = this.props.positions[x + '-' + y];
 
 	      if (piece) {
-	        return _react2.default.createElement(_Piece2.default, { color: piece.color, type: piece.type, x: x, y: y });
+	        return _react2.default.createElement(_Piece2.default, { color: piece.color, type: piece.type,
+	          moved: piece.moved, x: x, y: y });
 	      }
 
 	      return null;
@@ -29962,11 +29968,15 @@
 	    value: function componentWillReceiveProps(nextProps) {
 	      var _this3 = this;
 
-	      var img = new Image();
-	      img.src = '/images/' + nextProps.color + '-' + nextProps.type + '.png';
-	      img.onload = function () {
-	        return _this3.props.connectDragPreview(img);
-	      };
+	      if (this.props.color !== nextProps.color) {
+	        (function () {
+	          var img = new Image();
+	          img.src = '/images/' + nextProps.color + '-' + nextProps.type + '.png';
+	          img.onload = function () {
+	            return _this3.props.connectDragPreview(img);
+	          };
+	        })();
+	      }
 	    }
 	  }, {
 	    key: '_getPieceName',
@@ -29988,6 +29998,7 @@
 	  y: _react.PropTypes.number.isRequired,
 	  color: _react.PropTypes.oneOf(_constants.COLORS).isRequired,
 	  type: _react.PropTypes.oneOf(_constants.PIECES).isRequired,
+	  moved: _react.PropTypes.bool.isRequired,
 	  connectDragSource: _react.PropTypes.func.isRequired,
 	  connectDragPreview: _react.PropTypes.func.isRequired,
 	  isDragging: _react.PropTypes.bool.isRequired
@@ -29999,7 +30010,8 @@
 	      x: props.x,
 	      y: props.y,
 	      color: props.color,
-	      type: props.type
+	      type: props.type,
+	      moved: props.moved
 	    };
 	  }
 	};
@@ -30049,6 +30061,9 @@
 	      }
 
 	      switch (piece.type) {
+	        case 'pawn':
+	          this.pieceAtTarget = pieceAtTarget;
+	          return this.canMovePawn();
 	        case 'rook':
 	          return this.canMoveRook();
 	        case 'knight':
@@ -30057,8 +30072,34 @@
 	          return this.canMoveBishop();
 	        case 'queen':
 	          return this.canMoveQueen();
+	        case 'king':
+	          return this.canMoveKing();
+	      }
+	    }
+	  }, {
+	    key: 'canMovePawn',
+	    value: function canMovePawn(pieceAtTarget) {
+	      var dx = this.target.x - this.piece.x;
+	      var dy = this.target.y - this.piece.y;
+	      var moveDirection = this.getMoveDirection(this.piece.color);
+
+	      switch (true) {
+	        case dx === 0 && !this.pieceAtTarget:
+	          if (dy === moveDirection * 2 && !this.piece.moved) {
+	            var x = this.piece.x;
+	            var y = this.piece.y + moveDirection;
+	            return !this.positions[x + '-' + y];
+	          } else {
+	            return dy === moveDirection;
+	          }
+	        case Math.abs(dx) === 1 && dy === moveDirection:
+	          if (!this.pieceAtTarget) {
+	            return false;
+	          } else {
+	            return this.pieceAtTarget.color !== this.piece.color;
+	          }
 	        default:
-	          return true;
+	          return false;
 	      }
 	    }
 	  }, {
@@ -30135,6 +30176,23 @@
 	    key: 'canMoveQueen',
 	    value: function canMoveQueen() {
 	      return this.canMoveRook() || this.canMoveBishop();
+	    }
+	  }, {
+	    key: 'canMoveKing',
+	    value: function canMoveKing() {
+	      var dx = this.target.x - this.piece.x;
+	      var dy = this.target.y - this.piece.y;
+
+	      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+	        return false;
+	      }
+
+	      return true;
+	    }
+	  }, {
+	    key: 'getMoveDirection',
+	    value: function getMoveDirection(color) {
+	      return color === 'white' ? -1 : 1;
 	    }
 	  }]);
 

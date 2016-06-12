@@ -12,6 +12,7 @@ const positions = function(state, action) {
 
       newState[fromXY] = null;
       newState[toXY] = state[fromXY];
+      newState[toXY].moved = true;
 
       return Object.assign({}, state, newState);
     default:
@@ -26,6 +27,10 @@ function getStartingPositions() {
     let x = (i % 8) + 1;
     let y = Math.floor(i / 8) + 1;
     let piece = STARTING_POSITIONS[i] || null;
+
+    if(piece) {
+      piece.moved = false;
+    }
 
     pos[`${x}-${y}`] = piece;
   }

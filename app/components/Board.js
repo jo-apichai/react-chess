@@ -48,7 +48,10 @@ class Board extends Component {
     let piece = this.props.positions[`${x}-${y}`];
 
     if(piece) {
-      return <Piece color={piece.color} type={piece.type} x={x} y={y} />;
+      return(
+        <Piece color={piece.color} type={piece.type}
+          moved={piece.moved} x={x} y={y} />
+      );
     }
 
     return null;

@@ -22,9 +22,11 @@ class Piece extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    let img = new Image();
-    img.src = `/images/${nextProps.color}-${nextProps.type}.png`;
-    img.onload = () => this.props.connectDragPreview(img);
+    if(this.props.color !== nextProps.color) {
+      let img = new Image();
+      img.src = `/images/${nextProps.color}-${nextProps.type}.png`;
+      img.onload = () => this.props.connectDragPreview(img);
+    }
   }
 
   _getPieceName() {
@@ -41,6 +43,7 @@ Piece.propTypes = {
   y: PropTypes.number.isRequired,
   color: PropTypes.oneOf(COLORS).isRequired,
   type: PropTypes.oneOf(PIECES).isRequired,
+  moved: PropTypes.bool.isRequired,
   connectDragSource: PropTypes.func.isRequired,
   connectDragPreview: PropTypes.func.isRequired,
   isDragging: PropTypes.bool.isRequired
@@ -52,7 +55,8 @@ const pieceSource = {
       x: props.x,
       y: props.y,
       color: props.color,
-      type: props.type
+      type: props.type,
+      moved: props.moved
     };
   }
 };
