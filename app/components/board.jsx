@@ -1,10 +1,10 @@
 import React, { Component } from 'react'
-import { observer, inject } from 'mobx-react'
+import { DragDropContext } from 'react-dnd'
+import HTML5Backend from 'react-dnd-html5-backend'
 
 import Square from './square.jsx'
 
-@inject('game')
-@observer
+@DragDropContext(HTML5Backend)
 class Board extends Component {
   render() {
     return (
@@ -15,20 +15,20 @@ class Board extends Component {
   }
 
   _renderSquares() {
-    let squares = [];
+    let squares = []
 
     for(let i = 0; i < 64; i++) {
-      let x = (i % 8) + 1;
-      let y = Math.floor(i / 8) + 1;
-      let color = ((x + y) % 2) ? 'black' : 'white';
+      let x = (i % 8) + 1
+      let y = Math.floor(i / 8) + 1
+      let color = ((x + y) % 2) ? 'black' : 'white'
 
       squares.push(
         <Square position={i} x={x} y={y} color={color} key={i}>
         </Square>
-      );
+      )
     }
 
-    return squares;
+    return squares
   }
 }
 
