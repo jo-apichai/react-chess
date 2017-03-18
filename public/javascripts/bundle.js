@@ -16072,7 +16072,7 @@ var Board = (_dec = (0, _reactDnd.DragDropContext)(_reactDndHtml5Backend2.defaul
         var y = Math.floor(i / 8) + 1;
         var color = (x + y) % 2 ? 'black' : 'white';
 
-        squares.push(_react2.default.createElement(_square2.default, { position: i, x: x, y: y, color: color, key: i }));
+        squares.push(_react2.default.createElement(_square2.default, { x: x, y: y, color: color, key: i }));
       }
 
       return squares;
@@ -16094,6 +16094,8 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = undefined;
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -16170,21 +16172,179 @@ var Game = (_class = function () {
       return positions;
     }
   }, {
+    key: 'getPieceAtSquare',
+    value: function getPieceAtSquare(x, y) {
+      return this.positions[this._getSquarePosition(x, y)];
+    }
+  }, {
+    key: '_getSquarePosition',
+    value: function _getSquarePosition(x, y) {
+      return parseInt('' + (y - 1) + (x - 1), 8);
+    }
+  }, {
     key: 'movePiece',
     value: function movePiece(piece, target) {
-      var fromPosition = this._getPiecePosition(piece.x, piece.y);
-      var toPosition = this._getPiecePosition(target.x, target.y);
+      var fromPosition = this._getSquarePosition(piece.x, piece.y);
+      var toPosition = this._getSquarePosition(target.x, target.y);
       if (fromPosition === toPosition) {
         return;
       }
 
       this.positions[toPosition] = this.positions[fromPosition];
       this.positions[fromPosition] = null;
+      this._changeTurn();
     }
   }, {
-    key: '_getPiecePosition',
-    value: function _getPiecePosition(x, y) {
-      return parseInt('' + (y - 1) + (x - 1), 8);
+    key: '_changeTurn',
+    value: function _changeTurn() {
+      this.turn = this.turn === _config.COLORS[0] ? _config.COLORS[1] : _config.COLORS[0];
+    }
+  }, {
+    key: 'isMoveValid',
+    value: function isMoveValid(piece, target) {
+      var pieceAtTarget = this.getPieceAtSquare(target.x, target.y);
+
+      if (piece.color !== this.turn || piece.x === target.x && piece.y === target.y || pieceAtTarget && piece.color === pieceAtTarget.color) {
+        return false;
+      }
+
+      switch (piece.type) {
+        case 'pawn':
+          return this._canMovePawn(piece, target, pieceAtTarget);
+        case 'rook':
+          return this._canMoveRook(piece, target);
+        case 'knight':
+          return this._canMoveKnight(piece, target);
+        case 'bishop':
+          return this._canMoveBishop(piece, target);
+        case 'queen':
+          return this._canMoveQueen(piece, target);
+        case 'king':
+          return this._canMoveKing(piece, target);
+      }
+    }
+  }, {
+    key: '_getMoveDirection',
+    value: function _getMoveDirection(color) {
+      return color === 'white' ? -1 : 1;
+    }
+  }, {
+    key: '_canMovePawn',
+    value: function _canMovePawn(piece, target, pieceAtTarget) {
+      var dx = target.x - piece.x;
+      var dy = target.y - piece.y;
+      var moveDirection = this._getMoveDirection(piece.color);
+      var atStartingPosition = false;
+
+      if (piece.color === 'white' && piece.y === 7 || piece.color === 'black' && piece.y === 2) {
+        atStartingPosition = true;
+      }
+
+      switch (true) {
+        case dx === 0 && !pieceAtTarget:
+          if (atStartingPosition && dy === moveDirection * 2) {
+            return !this.getPieceAtSquare(piece.x, piece.y + moveDirection);
+          }
+
+          return dy === moveDirection;
+        case Math.abs(dx) === 1 && dy === moveDirection:
+          if (!pieceAtTarget) {
+            return false;
+          }
+
+          return piece.color !== pieceAtTarget.color;
+        default:
+          return false;
+      }
+    }
+  }, {
+    key: '_canMoveRook',
+    value: function _canMoveRook(piece, target) {
+      if (piece.x !== target.x && piece.y !== target.y) {
+        return false;
+      }
+
+      var startPosition = void 0,
+          endPosition = void 0,
+          x = void 0,
+          y = void 0;
+
+      if (piece.x === target.x) {
+        var _sort = [piece.y, target.y].sort();
+
+        var _sort2 = _slicedToArray(_sort, 2);
+
+        startPosition = _sort2[0];
+        endPosition = _sort2[1];
+
+        x = piece.x;
+      } else {
+        var _sort3 = [piece.x, target.x].sort();
+
+        var _sort4 = _slicedToArray(_sort3, 2);
+
+        startPosition = _sort4[0];
+        endPosition = _sort4[1];
+
+        y = piece.y;
+      }
+
+      for (var i = startPosition + 1; i < endPosition; i++) {
+        if (this.getPieceAtSquare(x || i, y || i) !== null) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+  }, {
+    key: '_canMoveKnight',
+    value: function _canMoveKnight(piece, target) {
+      var dx = target.x - piece.x;
+      var dy = target.y - piece.y;
+
+      return Math.abs(dx) === 2 && Math.abs(dy) === 1 || Math.abs(dx) === 1 && Math.abs(dy) === 2;
+    }
+  }, {
+    key: '_canMoveBishop',
+    value: function _canMoveBishop(piece, target) {
+      var dx = target.x - piece.x;
+      var dy = target.y - piece.y;
+
+      if (Math.abs(dx) !== Math.abs(dy)) {
+        return false;
+      }
+
+      var xMod = piece.x < target.x ? 1 : -1;
+      var yMod = piece.y < target.y ? 1 : -1;
+
+      for (var i = 1; i < Math.abs(dx); i++) {
+        var x = piece.x + i * xMod;
+        var y = piece.y + i * yMod;
+
+        if (this.getPieceAtSquare(x, y) !== null) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+  }, {
+    key: '_canMoveQueen',
+    value: function _canMoveQueen(piece, target) {
+      return this._canMoveRook(piece, target) || this._canMoveBishop(piece, target);
+    }
+  }, {
+    key: '_canMoveKing',
+    value: function _canMoveKing(piece, target) {
+      var dx = target.x - piece.x;
+      var dy = target.y - piece.y;
+
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+        return false;
+      }
+
+      return true;
     }
   }]);
 
@@ -16197,9 +16357,9 @@ var Game = (_class = function () {
 }), _descriptor2 = _applyDecoratedDescriptor(_class.prototype, 'turn', [_mobx.observable], {
   enumerable: true,
   initializer: function initializer() {
-    return 'white';
+    return _config.COLORS[0];
   }
-})), _class);
+}), _applyDecoratedDescriptor(_class.prototype, 'movePiece', [_mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'movePiece'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, '_changeTurn', [_mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, '_changeTurn'), _class.prototype)), _class);
 exports.default = Game;
 
 /***/ }),
@@ -16555,8 +16715,7 @@ var pieceSource = {
 function collect(connect, monitor) {
   return {
     connectDragSource: connect.dragSource(),
-    connectDragPreview: connect.dragPreview(),
-    isDragging: monitor.isDragging()
+    connectDragPreview: connect.dragPreview()
   };
 }
 
@@ -16570,11 +16729,31 @@ var Piece = (_dec = (0, _reactDnd.DragSource)(_config.DND_PIECE, pieceSource, co
   }
 
   _createClass(Piece, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      var img = new Image();
+      img.src = this._getPieceImage();
+      img.onload = function () {
+        return _this2.props.connectDragPreview(img);
+      };
+    }
+  }, {
+    key: 'componentWillUpdate',
+    value: function componentWillUpdate(nextProps) {
+      var _this3 = this;
+
+      var img = new Image();
+      img.src = '/images/' + nextProps.color + '-' + nextProps.type + '.png';
+      img.onload = function () {
+        return _this3.props.connectDragPreview(img);
+      };
+    }
+  }, {
     key: 'render',
     value: function render() {
-      var _props = this.props,
-          connectDragSource = _props.connectDragSource,
-          isDragging = _props.isDragging;
+      var connectDragSource = this.props.connectDragSource;
 
 
       return connectDragSource(_react2.default.createElement(
@@ -16602,7 +16781,7 @@ var Piece = (_dec = (0, _reactDnd.DragSource)(_config.DND_PIECE, pieceSource, co
   color: _react.PropTypes.oneOf(_config.COLORS).isRequired,
   type: _react.PropTypes.oneOf(_config.PIECES).isRequired,
   connectDragSource: _react.PropTypes.func.isRequired,
-  isDragging: _react.PropTypes.bool.isRequired
+  connectDragPreview: _react.PropTypes.func.isRequired
 }, _temp)) || _class);
 exports.default = Piece;
 
@@ -16649,25 +16828,25 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var squareTarget = {
   drop: function drop(props, monitor) {
-    props.game.movePiece(monitor.getItem(), { x: props.x, y: props.y });
+    var game = props.game,
+        x = props.x,
+        y = props.y;
+
+    var piece = monitor.getItem();
+    var target = { x: x, y: y };
+
+    game.movePiece(piece, target);
+  },
+  canDrop: function canDrop(props, monitor) {
+    var game = props.game,
+        x = props.x,
+        y = props.y;
+
+    var piece = monitor.getItem();
+    var target = { x: x, y: y };
+
+    return game.isMoveValid(piece, target);
   }
-
-  // canDrop(props, monitor) {
-  //   let piece = monitor.getItem();
-  //   let target = { x: props.x, y: props.y };
-
-  //   switch(true) {
-  //     case (piece.color !== props.turn):
-  //       return false;
-  //       break;
-  //     case (piece.x === target.x && piece.y === target.y):
-  //       return false;
-  //       break;
-  //     default:
-  //       return props.isMoveValid(piece, target);
-  //   }
-  // }
-
 };
 
 function collect(connect, monitor) {
@@ -16678,7 +16857,7 @@ function collect(connect, monitor) {
   };
 }
 
-var Square = (_dec = (0, _mobxReact.inject)('game'), _dec2 = (0, _reactDnd.DropTarget)(_config.DND_PIECE, squareTarget, collect), _dec(_class = (0, _mobxReact.observer)(_class = _dec2(_class = (_temp = _class2 = function (_Component) {
+var Square = (_dec = (0, _mobxReact.inject)('game'), _dec2 = (0, _reactDnd.DropTarget)(_config.DND_PIECE, squareTarget, collect), _dec(_class = _dec2(_class = (0, _mobxReact.observer)(_class = (_temp = _class2 = function (_Component) {
   _inherits(Square, _Component);
 
   function Square() {
@@ -16696,7 +16875,8 @@ var Square = (_dec = (0, _mobxReact.inject)('game'), _dec2 = (0, _reactDnd.DropT
       return connectDropTarget(_react2.default.createElement(
         'div',
         { className: (0, _classnames2.default)('square', this.props.color) },
-        this._renderPiece()
+        this._renderPiece(),
+        this._renderOverlay()
       ));
     }
   }, {
@@ -16704,22 +16884,47 @@ var Square = (_dec = (0, _mobxReact.inject)('game'), _dec2 = (0, _reactDnd.DropT
     value: function _renderPiece() {
       var _props = this.props,
           game = _props.game,
-          position = _props.position,
           x = _props.x,
           y = _props.y;
 
-      var piece = game.positions[position];
+      var piece = game.getPieceAtSquare(x, y);
       if (piece === null) {
         return null;
       }
 
       return _react2.default.createElement(_piece2.default, { x: x, y: y, color: piece.color, type: piece.type });
     }
+  }, {
+    key: '_renderOverlay',
+    value: function _renderOverlay() {
+      var _props2 = this.props,
+          isOver = _props2.isOver,
+          canDrop = _props2.canDrop;
+
+      var color = null;
+
+      switch (true) {
+        case isOver && canDrop:
+          color = 'green';
+          break;
+        case isOver && !canDrop:
+          color = 'red';
+          break;
+        case !isOver && canDrop:
+          color = 'yellow';
+          break;
+      }
+
+      if (color === null) {
+        return null;
+      }
+
+      return _react2.default.createElement('div', { className: (0, _classnames2.default)('overlay', color) });
+    }
   }]);
 
   return Square;
 }(_react.Component), _class2.propTypes = {
-  position: _react.PropTypes.number.isRequired,
   x: _react.PropTypes.number.isRequired,
   y: _react.PropTypes.number.isRequired,
   color: _react.PropTypes.oneOf(_config.COLORS).isRequired,

@@ -8,27 +8,20 @@ import { COLORS, DND_PIECE } from '../config.js'
 
 const squareTarget = {
   drop(props, monitor) {
-    props.game.movePiece(
-      monitor.getItem(),
-      { x: props.x, y: props.y }
-    )
+    const { game, x, y } = props
+    const piece = monitor.getItem()
+    const target = { x, y }
+
+    game.movePiece(piece, target)
+  },
+
+  canDrop(props, monitor) {
+    const { game, x, y } = props
+    const piece = monitor.getItem()
+    const target = { x, y }
+
+    return game.isMoveValid(piece, target)
   }
-
-  // canDrop(props, monitor) {
-  //   let piece = monitor.getItem();
-  //   let target = { x: props.x, y: props.y };
-
-  //   switch(true) {
-  //     case (piece.color !== props.turn):
-  //       return false;
-  //       break;
-  //     case (piece.x === target.x && piece.y === target.y):
-  //       return false;
-  //       break;
-  //     default:
-  //       return props.isMoveValid(piece, target);
-  //   }
-  // }
 }
 
 function collect(connect, monitor) {
@@ -40,11 +33,10 @@ function collect(connect, monitor) {
 }
 
 @inject('game')
-@observer
 @DropTarget(DND_PIECE, squareTarget, collect)
+@observer
 class Square extends Component {
   static propTypes = {
-    position: PropTypes.number.isRequired,
     x: PropTypes.number.isRequired,
     y: PropTypes.number.isRequired,
     color: PropTypes.oneOf(COLORS).isRequired,
@@ -59,18 +51,40 @@ class Square extends Component {
     return connectDropTarget(
       <div className={ClassNames('square', this.props.color)}>
         {this._renderPiece()}
+        {this._renderOverlay()}
       </div>
     )
   }
 
   _renderPiece() {
-    const { game, position, x, y } = this.props
-    const piece = game.positions[position]
+    const { game, x, y } = this.props
+    const piece = game.getPieceAtSquare(x, y)
     if(piece === null) { return null }
 
     return (
       <Piece x={x} y={y} color={piece.color} type={piece.type} />
     )
+  }
+
+  _renderOverlay() {
+    const { isOver, canDrop } = this.props
+    let color = null
+
+    switch(true) {
+      case (isOver && canDrop):
+        color = 'green'
+        break
+      case (isOver && !canDrop):
+        color = 'red'
+        break
+      case (!isOver && canDrop):
+        color = 'yellow'
+        break
+    }
+
+    if(color === null) { return null }
+
+    return <div className={ClassNames('overlay', color)}></div>
   }
 }
 

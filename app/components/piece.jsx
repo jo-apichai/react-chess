@@ -18,8 +18,7 @@ const pieceSource = {
 function collect(connect, monitor) {
   return {
     connectDragSource: connect.dragSource(),
-    connectDragPreview: connect.dragPreview(),
-    isDragging: monitor.isDragging()
+    connectDragPreview: connect.dragPreview()
   }
 }
 
@@ -31,11 +30,23 @@ class Piece extends Component {
     color: PropTypes.oneOf(COLORS).isRequired,
     type: PropTypes.oneOf(PIECES).isRequired,
     connectDragSource: PropTypes.func.isRequired,
-    isDragging: PropTypes.bool.isRequired
+    connectDragPreview: PropTypes.func.isRequired
+  }
+
+  componentDidMount() {
+    const img = new Image()
+    img.src = this._getPieceImage()
+    img.onload = () => this.props.connectDragPreview(img)
+  }
+
+  componentWillUpdate(nextProps) {
+    const img = new Image()
+    img.src = `/images/${nextProps.color}-${nextProps.type}.png`
+    img.onload = () => this.props.connectDragPreview(img)
   }
 
   render() {
-    const { connectDragSource, isDragging } = this.props
+    const { connectDragSource } = this.props
 
     return connectDragSource(
       <div className={ClassNames('piece', this._getPieceName())}>

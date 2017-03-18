@@ -23,7 +23,7 @@ class Board extends Component {
       let color = ((x + y) % 2) ? 'black' : 'white'
 
       squares.push(
-        <Square position={i} x={x} y={y} color={color} key={i}>
+        <Square x={x} y={y} color={color} key={i}>
         </Square>
       )
     }
