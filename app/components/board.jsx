@@ -1,15 +1,20 @@
 import React, { Component } from 'react'
 import { DragDropContext } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
+import { observer, inject } from 'mobx-react'
 
 import Square from './square.jsx'
+import PromotionModal from './modals/promotion.jsx'
 
+@inject('game')
 @DragDropContext(HTML5Backend)
+@observer
 class Board extends Component {
   render() {
     return (
       <div id="board">
         {this._renderSquares()}
+        {this._renderPromotionModal()}
       </div>
     )
   }
@@ -29,6 +34,13 @@ class Board extends Component {
     }
 
     return squares
+  }
+
+  _renderPromotionModal() {
+    const { game } = this.props
+    if(!game.promotion.active) { return null }
+
+    return <PromotionModal/>
   }
 }
 

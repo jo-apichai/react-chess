@@ -5,6 +5,7 @@ import { COLORS, STARTING_POSITIONS } from '../config.js'
 export default class Game {
   @observable positions = this._getStartingPositions()
   @observable turn = COLORS[0]
+  @observable promotion = { active: false, piece: null }
 
   _getStartingPositions() {
     const positions = {}
@@ -33,7 +34,22 @@ export default class Game {
 
     this.positions[toPosition] = this.positions[fromPosition]
     this.positions[fromPosition] = null
-    this._changeTurn()
+
+    this._checkSpecialConditions(piece, target)
+  }
+
+  @action
+  _checkSpecialConditions(piece, target) {
+    switch(true) {
+      case this._isPawnAtEightRank(piece, target):
+        this.promotion = {
+          active: true,
+          piece: this.getPieceAtSquare(target.x, target.y)
+        }
+        break
+      default:
+        this._changeTurn()
+    }
   }
 
   @action
@@ -170,5 +186,19 @@ export default class Game {
     }
 
     return true
+  }
+
+  _isPawnAtEightRank(piece, target) {
+    if(piece.type !== 'pawn') { return false }
+
+    return (piece.color === 'white' && target.y === 1) ||
+           (piece.color === 'black' && target.y === 8)
+  }
+
+  promotePiece(piece) {
+    this.promotion.piece.type = piece
+
+    this.promotion = { active: false, piece: null }
+    this._changeTurn()
   }
 }
