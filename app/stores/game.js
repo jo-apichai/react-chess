@@ -6,6 +6,9 @@ export default class Game {
   @observable positions = this._getStartingPositions()
   @observable turn = COLORS[0]
   @observable promotion = { active: false, piece: null }
+  @observable specialMoves = {
+    enPassant: null
+  }
 
   _getStartingPositions() {
     const positions = {}
@@ -40,16 +43,21 @@ export default class Game {
 
   @action
   _checkSpecialConditions(piece, target) {
-    switch(true) {
-      case this._isPawnAtEightRank(piece, target):
-        this.promotion = {
-          active: true,
-          piece: this.getPieceAtSquare(target.x, target.y)
-        }
-        break
-      default:
-        this._changeTurn()
+    if(this._isPawnAtEightRank(piece, target)) {
+      this.promotion = {
+        active: true,
+        piece: this.getPieceAtSquare(target.x, target.y)
+      }
+      return
     }
+
+    if(this._isEnPassantMove(piece, target)) {
+      const { x, y } = this.specialMoves.enPassant.piecePosition
+      this.positions[this._getSquarePosition(x, y)] = null
+    }
+
+    this._recordSpecialMoves(piece, target)
+    this._changeTurn()
   }
 
   @action
@@ -109,9 +117,11 @@ export default class Game {
 
         return (dy === moveDirection)
       case (Math.abs(dx) === 1 && dy === moveDirection):
-        if(!pieceAtTarget) { return false }
+        if(pieceAtTarget) {
+          return (piece.color !== pieceAtTarget.color)
+        }
 
-        return (piece.color !== pieceAtTarget.color)
+        return this._isEnPassantMove(piece, target)
       default:
         return false
     }
@@ -200,5 +210,37 @@ export default class Game {
 
     this.promotion = { active: false, piece: null }
     this._changeTurn()
+  }
+
+  _recordSpecialMoves(piece, target) {
+    this._recordEnPassantMove(piece, target)
+  }
+
+  _recordEnPassantMove(piece, target) {
+    const dy = target.y - piece.y
+    const moveDirection = this._getMoveDirection(piece.color)
+
+    if((piece.type !== 'pawn') || (dy !== (moveDirection * 2))) {
+      this.specialMoves.enPassant = null
+      return
+    }
+
+    this.specialMoves.enPassant = {
+      piecePosition: target,
+      attackablePosition: { x: target.x, y: target.y - moveDirection }
+    }
+  }
+
+  _isEnPassantMove(piece, target) {
+    const { enPassant } = this.specialMoves
+    if(!enPassant) { return false }
+
+    const { piecePosition, attackablePosition } = enPassant
+    const { x, y } = piecePosition
+    const attackablePiece = this.getPieceAtSquare(x, y)
+
+    return piece.color !== attackablePiece.color &&
+           target.x === attackablePosition.x &&
+           target.y === attackablePosition.y
   }
 }
