@@ -16089,11 +16089,8 @@ var Board = (_dec = (0, _mobxReact.inject)('game'), _dec2 = (0, _reactDnd.DragDr
     value: function _renderPromotionModal() {
       var game = this.props.game;
 
-      if (!game.promotion.active) {
-        return null;
-      }
 
-      return _react2.default.createElement(_promotion2.default, null);
+      return game.promotion.active ? _react2.default.createElement(_promotion2.default, null) : null;
     }
   }]);
 
@@ -16215,28 +16212,13 @@ var Game = (_class = function () {
       this.positions[toPosition] = this.positions[fromPosition];
       this.positions[fromPosition] = null;
 
-      this._checkSpecialConditions(piece, target);
-    }
-  }, {
-    key: '_checkSpecialConditions',
-    value: function _checkSpecialConditions(piece, target) {
-      if (this._isPawnAtEightRank(piece, target)) {
-        this.promotion = {
-          active: true,
-          piece: this.getPieceAtSquare(target.x, target.y)
-        };
+      this._checkSpecialMoves(piece, target);
+
+      this._checkPawnPromotion(piece, target);
+      if (this.promotion.active) {
         return;
       }
 
-      if (this._isEnPassantMove(piece, target)) {
-        var _specialMoves$enPassa = this.specialMoves.enPassant.piecePosition,
-            x = _specialMoves$enPassa.x,
-            y = _specialMoves$enPassa.y;
-
-        this.positions[this._getSquarePosition(x, y)] = null;
-      }
-
-      this._recordSpecialMoves(piece, target);
       this._changeTurn();
     }
   }, {
@@ -16294,7 +16276,7 @@ var Game = (_class = function () {
           return dy === moveDirection;
         case Math.abs(dx) === 1 && dy === moveDirection:
           if (pieceAtTarget) {
-            return piece.color !== pieceAtTarget.color;
+            return true;
           }
 
           return this._isEnPassantMove(piece, target);
@@ -16385,33 +16367,83 @@ var Game = (_class = function () {
       var dx = target.x - piece.x;
       var dy = target.y - piece.y;
 
-      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-        return false;
+      if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
+        return true;
       }
 
-      return true;
+      return this._isCastlingMove(piece, target);
     }
   }, {
-    key: '_isPawnAtEightRank',
-    value: function _isPawnAtEightRank(piece, target) {
+    key: '_isPawnAtEighthRank',
+    value: function _isPawnAtEighthRank(piece, target) {
       if (piece.type !== 'pawn') {
         return false;
       }
 
-      return piece.color === 'white' && target.y === 1 || piece.color === 'black' && target.y === 8;
+      return target.y === this._eighthRankY(piece.color);
+    }
+  }, {
+    key: '_eighthRankY',
+    value: function _eighthRankY(color) {
+      return color === 'white' ? 1 : 8;
+    }
+  }, {
+    key: '_checkPawnPromotion',
+    value: function _checkPawnPromotion(piece, target) {
+      if (this._isPawnAtEighthRank(piece, target)) {
+        this.promotion = {
+          active: true,
+          piece: this.getPieceAtSquare(target.x, target.y)
+        };
+      }
     }
   }, {
     key: 'promotePiece',
-    value: function promotePiece(piece) {
-      this.promotion.piece.type = piece;
-
+    value: function promotePiece(type) {
+      this.promotion.piece.type = type;
       this.promotion = { active: false, piece: null };
       this._changeTurn();
     }
   }, {
-    key: '_recordSpecialMoves',
-    value: function _recordSpecialMoves(piece, target) {
+    key: '_checkSpecialMoves',
+    value: function _checkSpecialMoves(piece, target) {
+      this._checkEnPassantMove(piece, target);
+      this._checkCastlingMove(piece, target);
+    }
+  }, {
+    key: '_checkEnPassantMove',
+    value: function _checkEnPassantMove(piece, target) {
+      if (this._isEnPassantMove(piece, target)) {
+        var _specialMoves$enPassa = this.specialMoves.enPassant.piecePosition,
+            x = _specialMoves$enPassa.x,
+            y = _specialMoves$enPassa.y;
+
+        this.positions[this._getSquarePosition(x, y)] = null;
+      }
+
       this._recordEnPassantMove(piece, target);
+    }
+  }, {
+    key: '_isEnPassantMove',
+    value: function _isEnPassantMove(piece, target) {
+      if (piece.type !== 'pawn') {
+        return false;
+      }
+
+      var enPassant = this.specialMoves.enPassant;
+
+      if (!enPassant) {
+        return false;
+      }
+
+      var piecePosition = enPassant.piecePosition,
+          attackablePosition = enPassant.attackablePosition;
+      var x = piecePosition.x,
+          y = piecePosition.y;
+
+      var attackablePiece = this.getPieceAtSquare(x, y);
+
+      return piece.color !== attackablePiece.color && target.x === attackablePosition.x && target.y === attackablePosition.y;
     }
   }, {
     key: '_recordEnPassantMove',
@@ -16430,22 +16462,88 @@ var Game = (_class = function () {
       };
     }
   }, {
-    key: '_isEnPassantMove',
-    value: function _isEnPassantMove(piece, target) {
-      var enPassant = this.specialMoves.enPassant;
+    key: '_checkCastlingMove',
+    value: function _checkCastlingMove(piece, target) {
+      if (this._isCastlingMove(piece, target)) {
+        var dx = target.x - piece.x;
+        var x = this._castlingRookX(dx);
+        var y = piece.y;
+        var rook = this.getPieceAtSquare(x, y);
+        var castlingX = this._castlingTargetX(dx);
 
-      if (!enPassant) {
+        this.positions[this._getSquarePosition(castlingX, y)] = rook;
+        this.positions[this._getSquarePosition(x, y)] = null;
+      }
+
+      this._recordCastlingMove(piece);
+    }
+  }, {
+    key: '_isCastlingMove',
+    value: function _isCastlingMove(piece, target) {
+      var castling = this.specialMoves.castling;
+
+      var color = piece.color;
+      var dx = target.x - piece.x;
+
+      if (!castling[color].possible || piece.type !== 'king' || piece.y !== target.y || Math.abs(dx) !== 2) {
         return false;
       }
 
-      var piecePosition = enPassant.piecePosition,
-          attackablePosition = enPassant.attackablePosition;
-      var x = piecePosition.x,
-          y = piecePosition.y;
+      var rookX = this._castlingRookX(dx);
+      if (castling[color].movedRook.indexOf(rookX) >= 0) {
+        return false;
+      }
 
-      var attackablePiece = this.getPieceAtSquare(x, y);
+      var _sort5 = [rookX, piece.x].sort(),
+          _sort6 = _slicedToArray(_sort5, 2),
+          start = _sort6[0],
+          end = _sort6[1];
 
-      return piece.color !== attackablePiece.color && target.x === attackablePosition.x && target.y === attackablePosition.y;
+      var y = piece.y;
+
+      for (var x = start + 1; x < end; x++) {
+        var p = this.getPieceAtSquare(x, y);
+
+        if (p !== null && !(p.type === 'king' && p.color === piece.color)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+  }, {
+    key: '_recordCastlingMove',
+    value: function _recordCastlingMove(piece) {
+      var castling = this.specialMoves.castling;
+
+      var color = piece.color;
+
+      if (!castling[color].possible) {
+        return;
+      }
+
+      switch (piece.type) {
+        case 'king':
+          castling[color].possible = false;
+          break;
+        case 'rook':
+          castling[color].movedRook.push(piece.x);
+
+          if (castling[color].movedRook.length > 1) {
+            castling[color].possible = false;
+          }
+          break;
+      }
+    }
+  }, {
+    key: '_castlingRookX',
+    value: function _castlingRookX(dx) {
+      return dx < 0 ? 1 : 8;
+    }
+  }, {
+    key: '_castlingTargetX',
+    value: function _castlingTargetX(dx) {
+      return dx < 0 ? 4 : 6;
     }
   }]);
 
@@ -16469,10 +16567,14 @@ var Game = (_class = function () {
   enumerable: true,
   initializer: function initializer() {
     return {
-      enPassant: null
+      enPassant: null,
+      castling: {
+        white: { possible: true, movedRook: [] },
+        black: { possible: true, movedRook: [] }
+      }
     };
   }
-}), _applyDecoratedDescriptor(_class.prototype, 'movePiece', [_mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'movePiece'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, '_checkSpecialConditions', [_mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, '_checkSpecialConditions'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, '_changeTurn', [_mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, '_changeTurn'), _class.prototype)), _class);
+}), _applyDecoratedDescriptor(_class.prototype, 'movePiece', [_mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'movePiece'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, '_changeTurn', [_mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, '_changeTurn'), _class.prototype)), _class);
 exports.default = Game;
 
 /***/ }),
@@ -16845,20 +16947,20 @@ var PromotionModal = (_dec = (0, _mobxReact.inject)('game'), _dec(_class = funct
     key: '_renderOptions',
     value: function _renderOptions() {
       var options = [];
-      var pieces = ['queen', 'rook', 'bishop', 'knight'];
+      var types = ['queen', 'rook', 'bishop', 'knight'];
       var game = this.props.game;
 
       var color = game.promotion.piece.color;
 
-      pieces.forEach(function (piece) {
+      types.forEach(function (type) {
         options.push(_react2.default.createElement(
           'li',
           { className: 'piece',
             onClick: function onClick() {
-              game.promotePiece(piece);
+              game.promotePiece(type);
             },
-            key: piece },
-          _react2.default.createElement('img', { src: '/images/' + color + '-' + piece + '.png' })
+            key: type },
+          _react2.default.createElement('img', { src: '/images/' + color + '-' + type + '.png' })
         ));
       });
 

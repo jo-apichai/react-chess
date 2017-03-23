@@ -38,9 +38,8 @@ class Board extends Component {
 
   _renderPromotionModal() {
     const { game } = this.props
-    if(!game.promotion.active) { return null }
 
-    return <PromotionModal/>
+    return game.promotion.active ? <PromotionModal/> : null
   }
 }
 

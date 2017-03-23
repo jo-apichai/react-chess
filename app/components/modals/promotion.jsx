@@ -22,16 +22,16 @@ class PromotionModal extends Component {
 
   _renderOptions() {
     const options = []
-    const pieces = ['queen', 'rook', 'bishop', 'knight']
+    const types = ['queen', 'rook', 'bishop', 'knight']
     const { game } = this.props
     const color = game.promotion.piece.color
 
-    pieces.forEach((piece) => {
+    types.forEach((type) => {
       options.push(
         <li className="piece"
-            onClick={() => { game.promotePiece(piece) }}
-            key={piece}>
-          <img src={`/images/${color}-${piece}.png`} />
+            onClick={() => { game.promotePiece(type) }}
+            key={type}>
+          <img src={`/images/${color}-${type}.png`} />
         </li>
       )
     })

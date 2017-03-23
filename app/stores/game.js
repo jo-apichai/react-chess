@@ -7,7 +7,11 @@ export default class Game {
   @observable turn = COLORS[0]
   @observable promotion = { active: false, piece: null }
   @observable specialMoves = {
-    enPassant: null
+    enPassant: null,
+    castling: {
+      white: { possible: true, movedRook: [] },
+      black: { possible: true, movedRook: [] }
+    }
   }
 
   _getStartingPositions() {
@@ -38,25 +42,11 @@ export default class Game {
     this.positions[toPosition] = this.positions[fromPosition]
     this.positions[fromPosition] = null
 
-    this._checkSpecialConditions(piece, target)
-  }
+    this._checkSpecialMoves(piece, target)
 
-  @action
-  _checkSpecialConditions(piece, target) {
-    if(this._isPawnAtEightRank(piece, target)) {
-      this.promotion = {
-        active: true,
-        piece: this.getPieceAtSquare(target.x, target.y)
-      }
-      return
-    }
+    this._checkPawnPromotion(piece, target)
+    if(this.promotion.active) { return }
 
-    if(this._isEnPassantMove(piece, target)) {
-      const { x, y } = this.specialMoves.enPassant.piecePosition
-      this.positions[this._getSquarePosition(x, y)] = null
-    }
-
-    this._recordSpecialMoves(piece, target)
     this._changeTurn()
   }
 
@@ -117,9 +107,7 @@ export default class Game {
 
         return (dy === moveDirection)
       case (Math.abs(dx) === 1 && dy === moveDirection):
-        if(pieceAtTarget) {
-          return (piece.color !== pieceAtTarget.color)
-        }
+        if(pieceAtTarget) { return true }
 
         return this._isEnPassantMove(piece, target)
       default:
@@ -191,29 +179,65 @@ export default class Game {
     const dx = target.x - piece.x
     const dy = target.y - piece.y
 
-    if(Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-      return false
+    if(Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
+      return true
     }
 
-    return true
+    return this._isCastlingMove(piece, target)
   }
 
-  _isPawnAtEightRank(piece, target) {
+  _isPawnAtEighthRank(piece, target) {
     if(piece.type !== 'pawn') { return false }
 
-    return (piece.color === 'white' && target.y === 1) ||
-           (piece.color === 'black' && target.y === 8)
+    return target.y === this._eighthRankY(piece.color)
   }
 
-  promotePiece(piece) {
-    this.promotion.piece.type = piece
+  _eighthRankY(color) {
+    return (color === 'white') ? 1 : 8
+  }
 
+  _checkPawnPromotion(piece, target) {
+    if(this._isPawnAtEighthRank(piece, target)) {
+      this.promotion = {
+        active: true,
+        piece: this.getPieceAtSquare(target.x, target.y)
+      }
+    }
+  }
+
+  promotePiece(type) {
+    this.promotion.piece.type = type
     this.promotion = { active: false, piece: null }
     this._changeTurn()
   }
 
-  _recordSpecialMoves(piece, target) {
+  _checkSpecialMoves(piece, target) {
+    this._checkEnPassantMove(piece, target)
+    this._checkCastlingMove(piece, target)
+  }
+
+  _checkEnPassantMove(piece, target) {
+    if(this._isEnPassantMove(piece, target)) {
+      const { x, y } = this.specialMoves.enPassant.piecePosition
+      this.positions[this._getSquarePosition(x, y)] = null
+    }
+
     this._recordEnPassantMove(piece, target)
+  }
+
+  _isEnPassantMove(piece, target) {
+    if(piece.type !== 'pawn') { return false }
+
+    const { enPassant } = this.specialMoves
+    if(!enPassant) { return false }
+
+    const { piecePosition, attackablePosition } = enPassant
+    const { x, y } = piecePosition
+    const attackablePiece = this.getPieceAtSquare(x, y)
+
+    return piece.color !== attackablePiece.color &&
+           target.x === attackablePosition.x &&
+           target.y === attackablePosition.y
   }
 
   _recordEnPassantMove(piece, target) {
@@ -231,16 +255,79 @@ export default class Game {
     }
   }
 
-  _isEnPassantMove(piece, target) {
-    const { enPassant } = this.specialMoves
-    if(!enPassant) { return false }
+  _checkCastlingMove(piece, target) {
+    if(this._isCastlingMove(piece, target)) {
+      const dx = target.x - piece.x
+      const x = this._castlingRookX(dx)
+      const y = piece.y
+      const rook = this.getPieceAtSquare(x, y)
+      const castlingX = this._castlingTargetX(dx)
 
-    const { piecePosition, attackablePosition } = enPassant
-    const { x, y } = piecePosition
-    const attackablePiece = this.getPieceAtSquare(x, y)
+      this.positions[this._getSquarePosition(castlingX, y)] = rook
+      this.positions[this._getSquarePosition(x, y)] = null
+    }
 
-    return piece.color !== attackablePiece.color &&
-           target.x === attackablePosition.x &&
-           target.y === attackablePosition.y
+    this._recordCastlingMove(piece)
+  }
+
+  _isCastlingMove(piece, target) {
+    const { castling } = this.specialMoves
+    const color = piece.color
+    const dx = target.x - piece.x
+
+    if(
+      !castling[color].possible ||
+      piece.type !== 'king' ||
+      piece.y !== target.y ||
+      Math.abs(dx) !== 2
+    ) {
+      return false
+    }
+
+    const rookX = this._castlingRookX(dx)
+    if(castling[color].movedRook.indexOf(rookX) >= 0) {
+      return false
+    }
+
+    const [start, end] = [rookX, piece.x].sort()
+    const y = piece.y
+
+    for(let x = (start + 1); x < end; x++) {
+      let p = this.getPieceAtSquare(x, y)
+
+      if(p !== null && !(p.type === 'king' && p.color === piece.color)) {
+        return false
+      }
+    }
+
+    return true
+  }
+
+  _recordCastlingMove(piece) {
+    const { castling } = this.specialMoves
+    const color = piece.color
+
+    if(!castling[color].possible) { return }
+
+    switch(piece.type) {
+      case 'king':
+        castling[color].possible = false
+        break
+      case 'rook':
+        castling[color].movedRook.push(piece.x)
+
+        if(castling[color].movedRook.length > 1) {
+          castling[color].possible = false
+        }
+        break
+    }
+  }
+
+  _castlingRookX(dx) {
+    return (dx < 0) ? 1 : 8
+  }
+
+  _castlingTargetX(dx) {
+    return (dx < 0) ? 4 : 6
   }
 }
