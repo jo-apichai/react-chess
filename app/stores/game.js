@@ -5,6 +5,14 @@ import { COLORS, STARTING_POSITIONS } from '../config.js'
 export default class Game {
   @observable positions = this._getStartingPositions()
   @observable turn = COLORS[0]
+  @observable promotion = { active: false, piece: null }
+  @observable specialMoves = {
+    enPassant: null,
+    castling: {
+      white: { possible: true, movedRook: [] },
+      black: { possible: true, movedRook: [] }
+    }
+  }
 
   _getStartingPositions() {
     const positions = {}
@@ -33,6 +41,12 @@ export default class Game {
 
     this.positions[toPosition] = this.positions[fromPosition]
     this.positions[fromPosition] = null
+
+    this._checkSpecialMoves(piece, target)
+
+    this._checkPawnPromotion(piece, target)
+    if(this.promotion.active) { return }
+
     this._changeTurn()
   }
 
@@ -93,9 +107,9 @@ export default class Game {
 
         return (dy === moveDirection)
       case (Math.abs(dx) === 1 && dy === moveDirection):
-        if(!pieceAtTarget) { return false }
+        if(pieceAtTarget) { return true }
 
-        return (piece.color !== pieceAtTarget.color)
+        return this._isEnPassantMove(piece, target)
       default:
         return false
     }
@@ -165,10 +179,155 @@ export default class Game {
     const dx = target.x - piece.x
     const dy = target.y - piece.y
 
-    if(Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+    if(Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
+      return true
+    }
+
+    return this._isCastlingMove(piece, target)
+  }
+
+  _isPawnAtEighthRank(piece, target) {
+    if(piece.type !== 'pawn') { return false }
+
+    return target.y === this._eighthRankY(piece.color)
+  }
+
+  _eighthRankY(color) {
+    return (color === 'white') ? 1 : 8
+  }
+
+  _checkPawnPromotion(piece, target) {
+    if(this._isPawnAtEighthRank(piece, target)) {
+      this.promotion = {
+        active: true,
+        piece: this.getPieceAtSquare(target.x, target.y)
+      }
+    }
+  }
+
+  promotePiece(type) {
+    this.promotion.piece.type = type
+    this.promotion = { active: false, piece: null }
+    this._changeTurn()
+  }
+
+  _checkSpecialMoves(piece, target) {
+    this._checkEnPassantMove(piece, target)
+    this._checkCastlingMove(piece, target)
+  }
+
+  _checkEnPassantMove(piece, target) {
+    if(this._isEnPassantMove(piece, target)) {
+      const { x, y } = this.specialMoves.enPassant.piecePosition
+      this.positions[this._getSquarePosition(x, y)] = null
+    }
+
+    this._recordEnPassantMove(piece, target)
+  }
+
+  _isEnPassantMove(piece, target) {
+    if(piece.type !== 'pawn') { return false }
+
+    const { enPassant } = this.specialMoves
+    if(!enPassant) { return false }
+
+    const { piecePosition, attackablePosition } = enPassant
+    const { x, y } = piecePosition
+    const attackablePiece = this.getPieceAtSquare(x, y)
+
+    return piece.color !== attackablePiece.color &&
+           target.x === attackablePosition.x &&
+           target.y === attackablePosition.y
+  }
+
+  _recordEnPassantMove(piece, target) {
+    const dy = target.y - piece.y
+    const moveDirection = this._getMoveDirection(piece.color)
+
+    if((piece.type !== 'pawn') || (dy !== (moveDirection * 2))) {
+      this.specialMoves.enPassant = null
+      return
+    }
+
+    this.specialMoves.enPassant = {
+      piecePosition: target,
+      attackablePosition: { x: target.x, y: target.y - moveDirection }
+    }
+  }
+
+  _checkCastlingMove(piece, target) {
+    if(this._isCastlingMove(piece, target)) {
+      const dx = target.x - piece.x
+      const x = this._castlingRookX(dx)
+      const y = piece.y
+      const rook = this.getPieceAtSquare(x, y)
+      const castlingX = this._castlingTargetX(dx)
+
+      this.positions[this._getSquarePosition(castlingX, y)] = rook
+      this.positions[this._getSquarePosition(x, y)] = null
+    }
+
+    this._recordCastlingMove(piece)
+  }
+
+  _isCastlingMove(piece, target) {
+    const { castling } = this.specialMoves
+    const color = piece.color
+    const dx = target.x - piece.x
+
+    if(
+      !castling[color].possible ||
+      piece.type !== 'king' ||
+      piece.y !== target.y ||
+      Math.abs(dx) !== 2
+    ) {
       return false
     }
 
+    const rookX = this._castlingRookX(dx)
+    if(castling[color].movedRook.indexOf(rookX) >= 0) {
+      return false
+    }
+
+    const [start, end] = [rookX, piece.x].sort()
+    const y = piece.y
+
+    for(let x = (start + 1); x < end; x++) {
+      let p = this.getPieceAtSquare(x, y)
+
+      if(p !== null && !(p.type === 'king' && p.color === piece.color)) {
+        return false
+      }
+    }
+
     return true
+  }
+
+  _recordCastlingMove(piece) {
+    const { castling } = this.specialMoves
+    const color = piece.color
+
+    if(!castling[color].possible) { return }
+
+    switch(piece.type) {
+      case 'king':
+        castling[color].possible = false
+        break
+      case 'rook':
+        castling[color].movedRook.push(piece.x)
+
+        if(castling[color].movedRook.length > 1) {
+          castling[color].possible = false
+        }
+        break
+    }
+  }
+
+  _castlingRookX(dx) {
+    return (dx < 0) ? 1 : 8
+  }
+
+  _castlingTargetX(dx) {
+    return (dx < 0) ? 4 : 6
   }
 }
