@@ -16110,6 +16110,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = undefined;
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -16231,7 +16233,21 @@ var Game = (_class = function () {
     value: function isMoveValid(piece, target) {
       var pieceAtTarget = this.getPieceAtSquare(target.x, target.y);
 
-      if (piece.color !== this.turn || piece.x === target.x && piece.y === target.y || pieceAtTarget && piece.color === pieceAtTarget.color) {
+      if (piece.color !== this.turn || pieceAtTarget && piece.color === pieceAtTarget.color) {
+        return false;
+      }
+
+      return this._canMovePiece(piece, target, pieceAtTarget);
+    }
+  }, {
+    key: '_getMoveDirection',
+    value: function _getMoveDirection(color) {
+      return color === 'white' ? -1 : 1;
+    }
+  }, {
+    key: '_canMovePiece',
+    value: function _canMovePiece(piece, target, pieceAtTarget) {
+      if (piece.x === target.x && piece.y === target.y) {
         return false;
       }
 
@@ -16251,38 +16267,44 @@ var Game = (_class = function () {
       }
     }
   }, {
-    key: '_getMoveDirection',
-    value: function _getMoveDirection(color) {
-      return color === 'white' ? -1 : 1;
-    }
-  }, {
     key: '_canMovePawn',
     value: function _canMovePawn(piece, target, pieceAtTarget) {
       var dx = target.x - piece.x;
       var dy = target.y - piece.y;
       var moveDirection = this._getMoveDirection(piece.color);
-      var atStartingPosition = false;
-
-      if (piece.color === 'white' && piece.y === 7 || piece.color === 'black' && piece.y === 2) {
-        atStartingPosition = true;
-      }
+      var atStartingPosition = this._isPawnAtStartingPosition(piece);
 
       switch (true) {
-        case dx === 0 && !pieceAtTarget:
-          if (atStartingPosition && dy === moveDirection * 2) {
-            return !this.getPieceAtSquare(piece.x, piece.y + moveDirection);
-          }
-
-          return dy === moveDirection;
-        case Math.abs(dx) === 1 && dy === moveDirection:
-          if (pieceAtTarget) {
-            return true;
-          }
-
-          return this._isEnPassantMove(piece, target);
+        case Math.abs(dx) > 1:
+          return false;
+        case Math.abs(dx) === 1:
+          return this._canAttackByPawn(piece, target, pieceAtTarget);
+        case dy === moveDirection:
+          return !pieceAtTarget;
+        case atStartingPosition && dy === moveDirection * 2:
+          return !this.getPieceAtSquare(piece.x, piece.y + moveDirection);
         default:
           return false;
       }
+    }
+  }, {
+    key: '_isPawnAtStartingPosition',
+    value: function _isPawnAtStartingPosition(piece) {
+      var pawnStartingY = piece.color === 'white' ? 7 : 2;
+      return piece.y === pawnStartingY;
+    }
+  }, {
+    key: '_canAttackByPawn',
+    value: function _canAttackByPawn(piece, target, pieceAtTarget) {
+      var dx = target.x - piece.x;
+      var dy = target.y - piece.y;
+      var moveDirection = this._getMoveDirection(piece.color);
+
+      if (Math.abs(dx) !== 1 || dy !== moveDirection) {
+        return false;
+      }
+
+      return !!pieceAtTarget || this._isEnPassantMove(piece, target);
     }
   }, {
     key: '_canMoveRook',
@@ -16368,7 +16390,7 @@ var Game = (_class = function () {
       var dy = target.y - piece.y;
 
       if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
-        return true;
+        return !this._isUnderAttack(piece.color, target);
       }
 
       return this._isCastlingMove(piece, target);
@@ -16509,6 +16531,19 @@ var Game = (_class = function () {
         }
       }
 
+      var _sort7 = [piece.x, target.x].sort();
+
+      var _sort8 = _slicedToArray(_sort7, 2);
+
+      start = _sort8[0];
+      end = _sort8[1];
+
+      for (var _x = start; _x <= end; _x++) {
+        if (this._isUnderAttack(piece.color, { x: _x, y: y })) {
+          return false;
+        }
+      }
+
       return true;
     }
   }, {
@@ -16544,6 +16579,39 @@ var Game = (_class = function () {
     key: '_castlingTargetX',
     value: function _castlingTargetX(dx) {
       return dx < 0 ? 4 : 6;
+    }
+  }, {
+    key: '_isUnderAttack',
+    value: function _isUnderAttack(color, position) {
+      var x = position.x,
+          y = position.y;
+
+      var pieceAtTarget = this.getPieceAtSquare(x, y);
+
+      for (var i = 0; i < 64; i++) {
+        var piece = this.positions[i];
+        if (piece === null || piece.color === color) {
+          continue;
+        }
+
+        piece = _extends({
+          x: i % 8 + 1,
+          y: Math.floor(i / 8) + 1
+        }, piece);
+
+        if (piece.type === 'pawn') {
+          if (this._canAttackByPawn(piece, position, pieceAtTarget)) {
+            return true;
+          }
+        } else {
+          if (this._canMovePiece(piece, position)) {
+            console.log(piece.type, position);
+            return true;
+          }
+        }
+      }
+
+      return false;
     }
   }]);
 
