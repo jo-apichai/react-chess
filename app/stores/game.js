@@ -60,9 +60,20 @@ export default class Game {
 
     if(
       (piece.color !== this.turn) ||
-      (piece.x === target.x && piece.y === target.y) ||
       (pieceAtTarget && piece.color === pieceAtTarget.color)
     ) {
+      return false
+    }
+
+    return this._canMovePiece(piece, target, pieceAtTarget)
+  }
+
+  _getMoveDirection(color) {
+    return (color === 'white') ? -1 : 1
+  }
+
+  _canMovePiece(piece, target, pieceAtTarget) {
+    if(piece.x === target.x && piece.y === target.y) {
       return false
     }
 
@@ -82,37 +93,41 @@ export default class Game {
     }
   }
 
-  _getMoveDirection(color) {
-    return (color === 'white') ? -1 : 1
-  }
-
   _canMovePawn(piece, target, pieceAtTarget) {
     const dx = target.x - piece.x
     const dy = target.y - piece.y
     const moveDirection = this._getMoveDirection(piece.color)
-    let atStartingPosition = false
-
-    if(
-      (piece.color === 'white' && piece.y === 7) ||
-      (piece.color === 'black' && piece.y === 2)
-    ) {
-      atStartingPosition = true
-    }
+    const atStartingPosition = this._isPawnAtStartingPosition(piece)
 
     switch(true) {
-      case (dx === 0 && !pieceAtTarget):
-        if(atStartingPosition && dy === (moveDirection * 2)) {
-          return !this.getPieceAtSquare(piece.x, piece.y + moveDirection)
-        }
-
-        return (dy === moveDirection)
-      case (Math.abs(dx) === 1 && dy === moveDirection):
-        if(pieceAtTarget) { return true }
-
-        return this._isEnPassantMove(piece, target)
+      case (Math.abs(dx) > 1):
+        return false
+      case (Math.abs(dx) === 1):
+        return this._canAttackByPawn(piece, target, pieceAtTarget)
+      case (dy === moveDirection):
+        return !pieceAtTarget
+      case (atStartingPosition && dy === (moveDirection * 2)):
+        return !this.getPieceAtSquare(piece.x, piece.y + moveDirection)
       default:
         return false
     }
+  }
+
+  _isPawnAtStartingPosition(piece) {
+    const pawnStartingY = (piece.color === 'white') ? 7 : 2
+    return piece.y === pawnStartingY
+  }
+
+  _canAttackByPawn(piece, target, pieceAtTarget) {
+    const dx = target.x - piece.x
+    const dy = target.y - piece.y
+    const moveDirection = this._getMoveDirection(piece.color)
+
+    if(Math.abs(dx) !== 1 || dy !== moveDirection) {
+      return false
+    }
+
+    return !!pieceAtTarget || this._isEnPassantMove(piece, target)
   }
 
   _canMoveRook(piece, target) {
@@ -180,7 +195,7 @@ export default class Game {
     const dy = target.y - piece.y
 
     if(Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
-      return true
+      return !this._isUnderAttack(piece.color, target)
     }
 
     return this._isCastlingMove(piece, target)
@@ -289,13 +304,20 @@ export default class Game {
       return false
     }
 
-    const [start, end] = [rookX, piece.x].sort()
+    let [start, end] = [rookX, piece.x].sort()
     const y = piece.y
 
     for(let x = (start + 1); x < end; x++) {
       let p = this.getPieceAtSquare(x, y)
 
       if(p !== null && !(p.type === 'king' && p.color === piece.color)) {
+        return false
+      }
+    }
+
+    [start, end] = [piece.x, target.x].sort()
+    for(let x = start; x <= end; x++) {
+      if(this._isUnderAttack(piece.color, { x, y })) {
         return false
       }
     }
@@ -329,5 +351,34 @@ export default class Game {
 
   _castlingTargetX(dx) {
     return (dx < 0) ? 4 : 6
+  }
+
+  _isUnderAttack(color, position) {
+    const { x, y } = position
+    const pieceAtTarget = this.getPieceAtSquare(x, y)
+
+    for(let i = 0; i < 64; i++) {
+      let piece = this.positions[i]
+      if(piece === null || piece.color === color) { continue }
+
+      piece = {
+        x: (i % 8) + 1,
+        y: Math.floor(i / 8) + 1,
+        ...piece
+      }
+
+      if(piece.type === 'pawn') {
+        if(this._canAttackByPawn(piece, position, pieceAtTarget)) {
+          return true
+        }
+      } else {
+        if(this._canMovePiece(piece, position)) {
+          console.log(piece.type, position)
+          return true
+        }
+      }
+    }
+
+    return false
   }
 }
