@@ -6,7 +6,8 @@ export default class Game {
   @observable positions = this._getStartingPositions()
   @observable turn = COLORS[0]
   @observable promotion = { active: false, piece: null }
-  @observable specialMoves = {
+
+  specialMoves = {
     enPassant: null,
     castling: {
       white: { possible: true, movedRook: [] },
@@ -31,6 +32,13 @@ export default class Game {
 
   _getSquarePosition(x, y) {
     return parseInt(`${y - 1}${x - 1}`, 8)
+  }
+
+  _getPositionSquare(i) {
+    return {
+      x: (i % 8) + 1,
+      y: Math.floor(i / 8) + 1
+    }
   }
 
   @action
@@ -195,7 +203,7 @@ export default class Game {
     const dy = target.y - piece.y
 
     if(Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
-      return !this._isUnderAttack(piece.color, target)
+      return true
     }
 
     return this._isCastlingMove(piece, target)
@@ -353,8 +361,8 @@ export default class Game {
     return (dx < 0) ? 4 : 6
   }
 
-  _isUnderAttack(color, position) {
-    const { x, y } = position
+  _isUnderAttack(color, square) {
+    const { x, y } = square
     const pieceAtTarget = this.getPieceAtSquare(x, y)
 
     for(let i = 0; i < 64; i++) {
@@ -362,18 +370,16 @@ export default class Game {
       if(piece === null || piece.color === color) { continue }
 
       piece = {
-        x: (i % 8) + 1,
-        y: Math.floor(i / 8) + 1,
+        ...this._getPositionSquare(i),
         ...piece
       }
 
       if(piece.type === 'pawn') {
-        if(this._canAttackByPawn(piece, position, pieceAtTarget)) {
+        if(this._canAttackByPawn(piece, square, pieceAtTarget)) {
           return true
         }
       } else {
-        if(this._canMovePiece(piece, position)) {
-          console.log(piece.type, position)
+        if(this._canMovePiece(piece, square)) {
           return true
         }
       }

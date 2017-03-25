@@ -16116,7 +16116,7 @@ var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = [
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _desc, _value, _class, _descriptor, _descriptor2, _descriptor3, _descriptor4;
+var _desc, _value, _class, _descriptor, _descriptor2, _descriptor3;
 
 var _mobx = __webpack_require__(111);
 
@@ -16177,7 +16177,13 @@ var Game = (_class = function () {
 
     _initDefineProp(this, 'promotion', _descriptor3, this);
 
-    _initDefineProp(this, 'specialMoves', _descriptor4, this);
+    this.specialMoves = {
+      enPassant: null,
+      castling: {
+        white: { possible: true, movedRook: [] },
+        black: { possible: true, movedRook: [] }
+      }
+    };
   }
 
   _createClass(Game, [{
@@ -16201,6 +16207,14 @@ var Game = (_class = function () {
     key: '_getSquarePosition',
     value: function _getSquarePosition(x, y) {
       return parseInt('' + (y - 1) + (x - 1), 8);
+    }
+  }, {
+    key: '_getPositionSquare',
+    value: function _getPositionSquare(i) {
+      return {
+        x: i % 8 + 1,
+        y: Math.floor(i / 8) + 1
+      };
     }
   }, {
     key: 'movePiece',
@@ -16390,7 +16404,7 @@ var Game = (_class = function () {
       var dy = target.y - piece.y;
 
       if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
-        return !this._isUnderAttack(piece.color, target);
+        return true;
       }
 
       return this._isCastlingMove(piece, target);
@@ -16582,9 +16596,9 @@ var Game = (_class = function () {
     }
   }, {
     key: '_isUnderAttack',
-    value: function _isUnderAttack(color, position) {
-      var x = position.x,
-          y = position.y;
+    value: function _isUnderAttack(color, square) {
+      var x = square.x,
+          y = square.y;
 
       var pieceAtTarget = this.getPieceAtSquare(x, y);
 
@@ -16594,18 +16608,14 @@ var Game = (_class = function () {
           continue;
         }
 
-        piece = _extends({
-          x: i % 8 + 1,
-          y: Math.floor(i / 8) + 1
-        }, piece);
+        piece = _extends({}, this._getPositionSquare(i), piece);
 
         if (piece.type === 'pawn') {
-          if (this._canAttackByPawn(piece, position, pieceAtTarget)) {
+          if (this._canAttackByPawn(piece, square, pieceAtTarget)) {
             return true;
           }
         } else {
-          if (this._canMovePiece(piece, position)) {
-            console.log(piece.type, position);
+          if (this._canMovePiece(piece, square)) {
             return true;
           }
         }
@@ -16630,17 +16640,6 @@ var Game = (_class = function () {
   enumerable: true,
   initializer: function initializer() {
     return { active: false, piece: null };
-  }
-}), _descriptor4 = _applyDecoratedDescriptor(_class.prototype, 'specialMoves', [_mobx.observable], {
-  enumerable: true,
-  initializer: function initializer() {
-    return {
-      enPassant: null,
-      castling: {
-        white: { possible: true, movedRook: [] },
-        black: { possible: true, movedRook: [] }
-      }
-    };
   }
 }), _applyDecoratedDescriptor(_class.prototype, 'movePiece', [_mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'movePiece'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, '_changeTurn', [_mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, '_changeTurn'), _class.prototype)), _class);
 exports.default = Game;
