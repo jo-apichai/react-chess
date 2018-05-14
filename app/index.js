@@ -9,7 +9,7 @@ const game = new Game()
 
 ReactDom.render(
   <Provider game={game}>
-    <Board/>
+    <Board />
   </Provider>,
-  document.getElementById("container")
+  document.getElementById('container')
 )

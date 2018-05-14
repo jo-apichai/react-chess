@@ -1,11 +1,12 @@
-import React, { Component, PropTypes } from 'react'
+import React, { Component } from 'react'
 import ClassNames from 'classnames'
 import { DragSource } from 'react-dnd'
+import PropTypes from 'prop-types'
 
 import { COLORS, PIECES, DND_PIECE } from '../config.js'
 
 const pieceSource = {
-  beginDrag(props) {
+  beginDrag (props) {
     return {
       x: props.x,
       y: props.y,
@@ -15,7 +16,7 @@ const pieceSource = {
   }
 }
 
-function collect(connect, monitor) {
+function collect (connect, monitor) {
   return {
     connectDragSource: connect.dragSource(),
     connectDragPreview: connect.dragPreview()
@@ -33,19 +34,29 @@ class Piece extends Component {
     connectDragPreview: PropTypes.func.isRequired
   }
 
-  componentDidMount() {
+  componentDidMount () {
     const img = new Image()
     img.src = this._getPieceImage()
     img.onload = () => this.props.connectDragPreview(img)
   }
 
-  componentWillUpdate(nextProps) {
+  componentWillUpdate (nextProps) {
     const img = new Image()
     img.src = `/images/${nextProps.color}-${nextProps.type}.png`
     img.onload = () => this.props.connectDragPreview(img)
   }
 
-  render() {
+  _getPieceName () {
+    const { color, type } = this.props
+
+    return `${color}-${type}`
+  }
+
+  _getPieceImage () {
+    return `/images/${this._getPieceName()}.png`
+  }
+
+  render () {
     const { connectDragSource } = this.props
 
     return connectDragSource(
@@ -53,14 +64,6 @@ class Piece extends Component {
         <img src={this._getPieceImage()} />
       </div>
     )
-  }
-
-  _getPieceName() {
-    return `${this.props.color}-${this.props.type}`
-  }
-
-  _getPieceImage() {
-    return `/images/${this._getPieceName()}.png`
   }
 }
 

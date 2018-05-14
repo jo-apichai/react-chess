@@ -1,13 +1,14 @@
-import React, { Component,PropTypes } from 'react'
-import { observer, inject } from 'mobx-react'
+import React, { Component } from 'react'
+import { observer, inject, PropTypes as MobXPropTypes } from 'mobx-react'
 import ClassNames from 'classnames'
 import { DropTarget } from 'react-dnd'
+import PropTypes from 'prop-types'
 
 import Piece from './piece.jsx'
 import { COLORS, DND_PIECE } from '../config.js'
 
 const squareTarget = {
-  drop(props, monitor) {
+  drop (props, monitor) {
     const { game, x, y } = props
     const piece = monitor.getItem()
     const target = { x, y }
@@ -15,7 +16,7 @@ const squareTarget = {
     game.movePiece(piece, target)
   },
 
-  canDrop(props, monitor) {
+  canDrop (props, monitor) {
     const { game, x, y } = props
     const piece = monitor.getItem()
     const target = { x, y }
@@ -24,7 +25,7 @@ const squareTarget = {
   }
 }
 
-function collect(connect, monitor) {
+function collect (connect, monitor) {
   return {
     connectDropTarget: connect.dropTarget(),
     isOver: monitor.isOver(),
@@ -42,35 +43,25 @@ class Square extends Component {
     color: PropTypes.oneOf(COLORS).isRequired,
     connectDropTarget: PropTypes.func.isRequired,
     isOver: PropTypes.bool.isRequired,
-    canDrop: PropTypes.bool.isRequired
+    canDrop: PropTypes.bool.isRequired,
+    game: MobXPropTypes.observableObject.isRequired
   }
 
-  render() {
-    const { connectDropTarget } = this.props
-
-    return connectDropTarget(
-      <div className={ClassNames('square', this.props.color)}>
-        {this._renderPiece()}
-        {this._renderOverlay()}
-      </div>
-    )
-  }
-
-  _renderPiece() {
+  _renderPiece () {
     const { game, x, y } = this.props
     const piece = game.getPieceAtSquare(x, y)
-    if(piece === null) { return null }
+    if (piece === null) { return null }
 
     return (
       <Piece x={x} y={y} color={piece.color} type={piece.type} />
     )
   }
 
-  _renderOverlay() {
+  _renderOverlay () {
     const { isOver, canDrop } = this.props
     let color = null
 
-    switch(true) {
+    switch (true) {
       case (isOver && canDrop):
         color = 'green'
         break
@@ -82,9 +73,20 @@ class Square extends Component {
         break
     }
 
-    if(color === null) { return null }
+    if (color === null) { return null }
 
-    return <div className={ClassNames('overlay', color)}></div>
+    return <div className={ClassNames('overlay', color)} />
+  }
+
+  render () {
+    const { connectDropTarget } = this.props
+
+    return connectDropTarget(
+      <div className={ClassNames('square', this.props.color)}>
+        {this._renderPiece()}
+        {this._renderOverlay()}
+      </div>
+    )
   }
 }
 
